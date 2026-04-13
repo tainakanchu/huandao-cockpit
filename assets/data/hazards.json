@@ -1,0 +1,182 @@
+[
+  {
+    "id": "hazard-beiyi-climb",
+    "type": "climb",
+    "startKm": 860,
+    "endKm": 905,
+    "severity": 3,
+    "message": "Beiyi Highway climb with heavy traffic. Consider taking the train from Yilan to Taipei.",
+    "messageZh": "北宜公路：登り坂＋交通量多い。宜蘭→台北は鉄道利用も検討。"
+  },
+  {
+    "id": "hazard-beiyi-traffic",
+    "type": "traffic",
+    "startKm": 860,
+    "endKm": 905,
+    "severity": 4,
+    "message": "Heavy traffic on Beiyi Highway, especially on weekends. Narrow shoulders in some sections.",
+    "messageZh": "北宜公路：特に週末は交通量が非常に多い。路肩が狭い区間あり。"
+  },
+  {
+    "id": "hazard-taoyuan-traffic",
+    "type": "traffic",
+    "startKm": 15,
+    "endKm": 45,
+    "severity": 2,
+    "message": "Urban traffic from Taipei to Taoyuan. Use designated bike lanes where available.",
+    "messageZh": "台北〜桃園：都市部の交通。自転車道を利用すること。"
+  },
+  {
+    "id": "hazard-hsinchu-wind",
+    "type": "wind_exposure",
+    "startKm": 80,
+    "endKm": 100,
+    "severity": 2,
+    "message": "Hsinchu is known as the Windy City. Expect headwinds along the coast.",
+    "messageZh": "新竹：風の街として知られる。海沿いは向かい風に注意。"
+  },
+  {
+    "id": "hazard-miaoli-climb",
+    "type": "climb",
+    "startKm": 115,
+    "endKm": 130,
+    "severity": 2,
+    "message": "Moderate hills through Miaoli county.",
+    "messageZh": "苗栗県内の丘陵地帯：緩やかなアップダウン。"
+  },
+  {
+    "id": "hazard-changhua-heat",
+    "type": "heat",
+    "startKm": 230,
+    "endKm": 320,
+    "severity": 3,
+    "message": "Flat plains from Changhua to Chiayi. Little shade, extreme heat in summer.",
+    "messageZh": "彰化〜嘉義：平地で日陰が少ない。夏季は猛暑に注意。"
+  },
+  {
+    "id": "hazard-tainan-heat",
+    "type": "heat",
+    "startKm": 340,
+    "endKm": 420,
+    "severity": 3,
+    "message": "Hot and humid from Tainan to Kaohsiung. Hydrate frequently.",
+    "messageZh": "台南〜高雄：高温多湿。こまめな水分補給が必要。"
+  },
+  {
+    "id": "hazard-fenggang-wind",
+    "type": "wind_exposure",
+    "startKm": 450,
+    "endKm": 470,
+    "severity": 3,
+    "message": "Luoshanfeng (falling mountain wind) zone. Strong crosswinds Oct-Apr can reach 60+ km/h.",
+    "messageZh": "楓港〜車城：落山風エリア。10〜4月は60km/h超の横風に注意。"
+  },
+  {
+    "id": "hazard-nanhuei-tunnel-1",
+    "type": "tunnel",
+    "startKm": 530,
+    "endKm": 535,
+    "severity": 2,
+    "message": "Short tunnels along the southern coast. Use rear lights.",
+    "messageZh": "南部海岸のトンネル：後方ライト必須。"
+  },
+  {
+    "id": "hazard-shouqia-climb",
+    "type": "climb",
+    "startKm": 485,
+    "endKm": 500,
+    "severity": 5,
+    "message": "Shouqia Pass: 460m elevation gain over 17km. The hardest climb on the route. Carry extra water.",
+    "messageZh": "寿卡：17kmで標高差約460m。環島最大の難所。水を多めに携帯すること。"
+  },
+  {
+    "id": "hazard-shouqia-supply",
+    "type": "low_supply",
+    "startKm": 485,
+    "endKm": 500,
+    "severity": 4,
+    "message": "Very limited supply between Manzhou and Daren. Stock up before the climb.",
+    "messageZh": "滿州〜達仁：補給ポイントが極めて少ない。登り前に必ず補給。"
+  },
+  {
+    "id": "hazard-taimali-night",
+    "type": "night_risk",
+    "startKm": 575,
+    "endKm": 625,
+    "severity": 3,
+    "message": "Dark rural roads from Daren to Taitung. Plan to pass in daylight.",
+    "messageZh": "達仁〜台東：夜間は暗い田舎道。明るいうちに通過すること。"
+  },
+  {
+    "id": "hazard-east-coast-supply",
+    "type": "low_supply",
+    "startKm": 570,
+    "endKm": 680,
+    "severity": 3,
+    "message": "Supply stops are sparse on the East Coast (Taitung to Hualien). Plan ahead.",
+    "messageZh": "台東〜花蓮海線：補給地点が少ない。計画的な補給が必要。"
+  },
+  {
+    "id": "hazard-east-coast-wind",
+    "type": "wind_exposure",
+    "startKm": 640,
+    "endKm": 730,
+    "severity": 2,
+    "message": "Pacific coast exposure. Headwinds possible when cycling north.",
+    "messageZh": "東海岸：太平洋に面し、北上時は向かい風の可能性。"
+  },
+  {
+    "id": "hazard-suhua-traffic",
+    "type": "traffic",
+    "startKm": 740,
+    "endKm": 800,
+    "severity": 5,
+    "message": "Suhua Highway: Extremely dangerous for cyclists. Heavy truck traffic, narrow roads, landslide risk.",
+    "messageZh": "蘇花公路：自転車にとって極めて危険。大型車多数、道幅狭い、落石リスク。"
+  },
+  {
+    "id": "hazard-suhua-tunnel",
+    "type": "tunnel",
+    "startKm": 740,
+    "endKm": 800,
+    "severity": 5,
+    "message": "Multiple long tunnels on Suhua Highway. Poor ventilation, no bike lane. Very dangerous.",
+    "messageZh": "蘇花公路のトンネル群：換気不良、自転車レーンなし。非常に危険。"
+  },
+  {
+    "id": "hazard-suhua-rail-transfer",
+    "type": "rail_transfer",
+    "startKm": 740,
+    "endKm": 800,
+    "severity": 5,
+    "message": "STRONGLY RECOMMENDED: Take the train from Xincheng/Hualien to Su'ao. Much safer than cycling Suhua Highway.",
+    "messageZh": "【強く推奨】新城/花蓮→蘇澳は鉄道輸送を推奨。蘇花公路の自転車走行は極めて危険。"
+  },
+  {
+    "id": "hazard-suhua-climb",
+    "type": "climb",
+    "startKm": 740,
+    "endKm": 800,
+    "severity": 4,
+    "message": "Steep climbs on Suhua Highway with exposed cliff roads.",
+    "messageZh": "蘇花公路：急な登り坂と崖沿いの道路。"
+  },
+  {
+    "id": "hazard-northeast-coast-traffic",
+    "type": "traffic",
+    "startKm": 920,
+    "endKm": 950,
+    "severity": 2,
+    "message": "Moderate traffic along the northeast coast, especially on weekends.",
+    "messageZh": "北東海岸：特に週末は交通量多め。"
+  },
+  {
+    "id": "hazard-xiluo-bridge",
+    "type": "traffic",
+    "startKm": 260,
+    "endKm": 270,
+    "severity": 2,
+    "message": "Xiluo Bridge: Narrow bridge with traffic. Use caution when crossing.",
+    "messageZh": "西螺大橋：狭い橋の上で交通あり。注意して渡ること。"
+  }
+]
