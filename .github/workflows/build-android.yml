@@ -44,6 +44,16 @@ jobs:
       - name: Expo prebuild (generate android/)
         run: pnpm exec expo prebuild --platform android --clean
 
+      - name: Patch build.gradle for async-storage local maven repo
+        run: |
+          # async-storage ships a local maven repo that must be in allprojects.repositories
+          if ! grep -q "async-storage" android/build.gradle; then
+            sed -i '/mavenCentral()/a\        maven { url "$rootDir/../node_modules/@react-native-async-storage/async-storage/android/local_repo" }' android/build.gradle
+            echo "Patched build.gradle with async-storage local maven repo"
+          else
+            echo "async-storage repo already present"
+          fi
+
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
