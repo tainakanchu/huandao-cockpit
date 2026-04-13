@@ -41,98 +41,36 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Expo prebuild (generate android/)
+      - name: Expo prebuild
         run: pnpm exec expo prebuild --platform android --clean
 
-      - name: Patch build.gradle for async-storage local maven repo
+      - name: Patch async-storage maven repo
         run: |
           if ! grep -q "async-storage" android/build.gradle; then
             sed -i '/mavenCentral()/a\        maven { url "$rootDir/../node_modules/@react-native-async-storage/async-storage/android/local_repo" }' android/build.gradle
-            echo "Patched build.gradle with async-storage local maven repo"
           fi
 
-      - name: Restore release keystore
+      - name: Setup release signing
         if: github.event_name != 'pull_request'
         env:
-          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
-
-      - name: Patch signing config for release
-        if: github.event_name != 'pull_request'
-        env:
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: |
-          # Add release signing via gradle.properties (safe: not committed, not logged)
-          cat >> android/gradle.properties << EOF
-          RELEASE_STORE_FILE=release.keystore
-          RELEASE_STORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD
-          RELEASE_KEY_ALIAS=$ANDROID_KEY_ALIAS
-          RELEASE_KEY_PASSWORD=$ANDROID_KEY_PASSWORD
-          EOF
-
-          # Inject release signingConfig into app/build.gradle
-          python3 << 'PYEOF'
-          import re
-
-          with open("android/app/build.gradle") as f:
-              content = f.read()
-
-          # Add release signing config after the debug config block
-          signing_addition = """
-        release {
-            if (project.hasProperty('RELEASE_STORE_FILE')) {
-                storeFile file(RELEASE_STORE_FILE)
-                storePassword RELEASE_STORE_PASSWORD
-                keyAlias RELEASE_KEY_ALIAS
-                keyPassword RELEASE_KEY_PASSWORD
-            }
-        }"""
-
-          content = content.replace(
-              "signingConfig signingConfigs.debug\n        }",
-              "signingConfig signingConfigs.debug\n        }" + signing_addition,
-              1  # only first occurrence (in signingConfigs block)
-          )
-
-          # Use release signing for release build type
-          content = content.replace(
-              "signingConfig signingConfigs.debug\n            def enableShrinkResources",
-              "signingConfig project.hasProperty('RELEASE_STORE_FILE') ? signingConfigs.release : signingConfigs.debug\n            def enableShrinkResources"
-          )
-
-          with open("android/app/build.gradle", "w") as f:
-              f.write(content)
-
-          print("Patched release signing config")
-          PYEOF
+          echo "$KEYSTORE_BASE64" | base64 -d > android/app/release.keystore
+          python3 scripts/ci-patch-signing.py
 
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
 
-      - name: Verify APK signing
-        if: github.event_name != 'pull_request'
-        run: |
-          $ANDROID_HOME/build-tools/35.0.0/apksigner verify --print-certs android/app/build/outputs/apk/release/app-release.apk || true
-
-      - name: Upload signed APK
-        if: github.event_name != 'pull_request'
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: huandao-cockpit-release-signed
+          name: huandao-cockpit-release
           path: android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
-
-      - name: Upload unsigned APK (PR)
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: huandao-cockpit-release-unsigned
-          path: android/app/build/outputs/apk/release/app-release.apk
-          retention-days: 7
 
       - name: Clean up keystore
         if: always()
