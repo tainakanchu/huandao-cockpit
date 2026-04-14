@@ -37,9 +37,24 @@ export default function PositionAdjuster({
 
   const sortedGoals = useMemo(() => {
     const all = getGoalCandidates();
-    return all
+    const filtered = all
       .filter((g) => g.tier === 'major' || g.tier === 'mid')
       .sort((a, b) => a.kmFromStart - b.kmFromStart);
+
+    // ルートは環状: 台北（km 944）が終点だが出発点（km 0）でもある
+    // km 0 にスタート地点エントリを追加
+    const taipei = all.find((g) => g.name.includes('Taipei'));
+    if (taipei && !filtered.some((g) => g.kmFromStart === 0)) {
+      filtered.unshift({
+        ...taipei,
+        id: 'start-taipei',
+        name: 'Taipei / Songshan (Start)',
+        nameZh: '台北/松山（出発点）',
+        kmFromStart: 0,
+      });
+    }
+
+    return filtered;
   }, []);
 
   // Find the closest goal to currentKm for highlighting
