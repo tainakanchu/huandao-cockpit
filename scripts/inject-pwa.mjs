@@ -72,11 +72,17 @@ const pwaHead = `
       }
     </script>`;
 
-// Update viewport for notched devices
+// Update viewport for notched devices, promote Expo bundle to `type="module"`
+// (Metro's output references `import.meta.env`, which is a SyntaxError in a
+// classic script. Modules tolerate `import.meta` and are deferred by default.)
 const updatedHtml = html
   .replace(
     /<meta name="viewport"[^>]*\/?>/,
     '<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, viewport-fit=cover" />',
+  )
+  .replace(
+    /<script src="(\/_expo\/static\/js\/web\/[^"]+)" defer><\/script>/,
+    '<script src="$1" type="module"></script>',
   )
   .replace('</head>', `${pwaHead}\n  </head>`);
 
