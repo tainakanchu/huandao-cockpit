@@ -156,7 +156,6 @@ export type SupplyPoint = {
   kmFromDayStart: number;
   recommended: SupplyRecommendation;
   reason: string;
-  localFood?: string;
 };
 
 // 2.9.5 経由地 / Via Point

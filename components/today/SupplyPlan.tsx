@@ -108,11 +108,6 @@ export default function SupplyPlan({ supplyPoints }: Props) {
                   </Text>
                   <Text style={styles.mapLink}>MAP</Text>
                 </View>
-                {sp.localFood && (
-                  <Text style={styles.localFoodText}>
-                    🍴 {sp.localFood}
-                  </Text>
-                )}
                 {sp.recommended === 'meal' && (
                   <TouchableOpacity
                     style={styles.restaurantLink}
@@ -246,13 +241,6 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 4,
     overflow: 'hidden',
-  },
-  localFoodText: {
-    fontSize: 12,
-    color: CyclingColors.accent,
-    fontWeight: '600',
-    marginTop: 4,
-    fontStyle: 'italic',
   },
   restaurantLink: {
     marginTop: 6,

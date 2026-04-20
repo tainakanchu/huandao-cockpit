@@ -11,7 +11,6 @@ import type {
   SupplyRecommendation,
   RideStatus,
 } from "@/lib/types";
-import guideData from "@/assets/data/guide-data.json";
 
 /** Checkpoint types that count as supply points */
 const SUPPLY_TYPES = new Set([
@@ -356,16 +355,7 @@ export function generateSupplyPlan(
       }
     }
 
-    // Attach local food info if the checkpoint is in the food's km range
-    let localFood: string | undefined;
-    for (const food of guideData.localFood) {
-      if (cp.kmFromStart >= food.kmRange[0] && cp.kmFromStart <= food.kmRange[1]) {
-        localFood = `${food.name}: ${food.description}`;
-        break;
-      }
-    }
-
-    plan.push({ checkpoint: cp, kmFromDayStart, recommended, reason, localFood });
+    plan.push({ checkpoint: cp, kmFromDayStart, recommended, reason });
   }
 
   return plan;
