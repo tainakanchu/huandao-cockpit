@@ -14,6 +14,7 @@ import { getGoalCandidates } from '@/lib/data/goals';
 import { getCheckpoints } from '@/lib/data/checkpoints';
 import { useWaypointStore, WAYPOINT_LIMIT } from '@/lib/store/waypointStore';
 import { useT } from '@/lib/i18n';
+import OsmSearchModal from '@/components/plan/OsmSearchModal';
 import type {
   GoalCandidate,
   Checkpoint,
@@ -25,6 +26,12 @@ import type {
 type Props = {
   visible: boolean;
   onClose: () => void;
+  /**
+   * When set, the picker hides items outside this km range by default (the
+   * "today" flow). Users can still toggle a "全区間" button to see all items.
+   */
+  dayStartKm?: number;
+  dayEndKm?: number;
 };
 
 type PickableItem = {
@@ -134,9 +141,20 @@ function buildPickableItems(): PickableItem[] {
   return items;
 }
 
-export default function WaypointPicker({ visible, onClose }: Props) {
+export default function WaypointPicker({
+  visible,
+  onClose,
+  dayStartKm,
+  dayEndKm,
+}: Props) {
   const t = useT();
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [osmVisible, setOsmVisible] = useState(false);
+  // When a day range is provided, start in "day" mode (only show items in range).
+  // Users can switch to "all" via a toggle.
+  const hasDayRange =
+    dayStartKm !== undefined && dayEndKm !== undefined && dayEndKm > dayStartKm;
+  const [dayScopeOnly, setDayScopeOnly] = useState(hasDayRange);
 
   const waypoints = useWaypointStore((s) => s.waypoints);
   const toggleWaypointBySource = useWaypointStore(
@@ -146,21 +164,28 @@ export default function WaypointPicker({ visible, onClose }: Props) {
   const allItems = useMemo(() => buildPickableItems(), []);
 
   const filteredItems = useMemo(() => {
-    if (filter === 'all') return allItems;
+    let items = allItems;
+    if (hasDayRange && dayScopeOnly) {
+      items = items.filter(
+        (i) =>
+          i.kmFromStart >= (dayStartKm as number) - 0.5 &&
+          i.kmFromStart <= (dayEndKm as number) + 0.5,
+      );
+    }
+    if (filter === 'all') return items;
     if (filter === 'accommodation')
-      return allItems.filter((i) => i.category === 'accommodation');
+      return items.filter((i) => i.category === 'accommodation');
     if (filter === 'major')
-      return allItems.filter(
+      return items.filter(
         (i) => i.category === 'sightseeing' && i.icon === '⭐',
       );
     if (filter === 'sightseeing')
-      return allItems.filter(
+      return items.filter(
         (i) => i.category === 'sightseeing' && i.icon !== '⭐',
       );
-    if (filter === 'food')
-      return allItems.filter((i) => i.category === 'food');
-    return allItems;
-  }, [filter, allItems]);
+    if (filter === 'food') return items.filter((i) => i.category === 'food');
+    return items;
+  }, [filter, allItems, dayScopeOnly, hasDayRange, dayStartKm, dayEndKm]);
 
   const addedKeys = useMemo(() => {
     const set = new Set<string>();
@@ -271,7 +296,9 @@ export default function WaypointPicker({ visible, onClose }: Props) {
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>{t.addWaypointTitle}</Text>
             <Text style={styles.headerSubtitle}>
-              {t.waypointsSubtitle(waypoints.length, WAYPOINT_LIMIT)}
+              {hasDayRange && dayScopeOnly
+                ? `今日の区間 (KP ${Math.round(dayStartKm as number)}-${Math.round(dayEndKm as number)}km) · ${waypoints.length}/${WAYPOINT_LIMIT}`
+                : t.waypointsSubtitle(waypoints.length, WAYPOINT_LIMIT)}
             </Text>
           </View>
           <TouchableOpacity
@@ -282,6 +309,55 @@ export default function WaypointPicker({ visible, onClose }: Props) {
             <Text style={styles.closeButtonText}>{t.close}</Text>
           </TouchableOpacity>
         </View>
+
+        <View style={styles.osmRow}>
+          <TouchableOpacity
+            style={styles.osmButton}
+            onPress={() => setOsmVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.osmButtonText}>🔍 OSM で場所を検索</Text>
+          </TouchableOpacity>
+        </View>
+
+        {hasDayRange && (
+          <View style={styles.scopeRow}>
+            <TouchableOpacity
+              style={[
+                styles.scopeButton,
+                dayScopeOnly && styles.scopeButtonActive,
+              ]}
+              onPress={() => setDayScopeOnly(true)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.scopeButtonText,
+                  dayScopeOnly && styles.scopeButtonTextActive,
+                ]}
+              >
+                📍 今日の区間
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.scopeButton,
+                !dayScopeOnly && styles.scopeButtonActive,
+              ]}
+              onPress={() => setDayScopeOnly(false)}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.scopeButtonText,
+                  !dayScopeOnly && styles.scopeButtonTextActive,
+                ]}
+              >
+                🗺️ 全区間
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View style={styles.filterRow}>
           <FlatList
@@ -314,6 +390,13 @@ export default function WaypointPicker({ visible, onClose }: Props) {
           renderItem={renderItem}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+        />
+
+        <OsmSearchModal
+          visible={osmVisible}
+          onClose={() => setOsmVisible(false)}
+          dayStartKm={dayStartKm}
+          dayEndKm={dayEndKm}
         />
       </SafeAreaView>
     </Modal>
@@ -358,6 +441,56 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: CyclingColors.primary,
+  },
+
+  osmRow: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 4,
+    backgroundColor: CyclingColors.card,
+  },
+  osmButton: {
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: CyclingColors.primaryDark,
+    backgroundColor: CyclingColors.primaryLight,
+    alignItems: 'center',
+  },
+  osmButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: CyclingColors.primaryDark,
+  },
+
+  scopeRow: {
+    flexDirection: 'row',
+    backgroundColor: CyclingColors.card,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 6,
+    gap: 6,
+  },
+  scopeButton: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignItems: 'center',
+    backgroundColor: CyclingColors.background,
+    borderWidth: 1,
+    borderColor: CyclingColors.cardBorder,
+  },
+  scopeButtonActive: {
+    backgroundColor: CyclingColors.primary,
+    borderColor: CyclingColors.primaryDark,
+  },
+  scopeButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: CyclingColors.textSecondary,
+  },
+  scopeButtonTextActive: {
+    color: CyclingColors.white,
   },
 
   filterRow: {
