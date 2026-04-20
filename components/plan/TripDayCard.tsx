@@ -11,7 +11,9 @@ import { getDifficultyLevel } from '@/lib/logic/difficulty';
 import { getRouteElevationProfile, getElevationAtKm } from '@/lib/data/route';
 import { getGoalCandidates } from '@/lib/data/goals';
 import DifficultyBadge from '@/components/common/DifficultyBadge';
+import { useWaypointStore } from '@/lib/store/waypointStore';
 import type { TripDaySlot } from '@/lib/store/tripStore';
+import type { Waypoint, WaypointCategory } from '@/lib/types';
 
 type Props = {
   slot: TripDaySlot;
@@ -69,6 +71,16 @@ export default function TripDayCard({
     const goals = getGoalCandidates();
     return goals.find((g) => g.id === slot.goalId);
   }, [slot.goalId]);
+
+  // Waypoints that fall within this day's range (exclude the endpoint itself)
+  const allWaypoints = useWaypointStore((s) => s.waypoints);
+  const dayWaypoints = useMemo(() => {
+    return allWaypoints.filter(
+      (w) =>
+        w.kmFromStart > slot.startKm + 0.5 &&
+        w.kmFromStart < slot.endKm - 0.5,
+    );
+  }, [allWaypoints, slot.startKm, slot.endKm]);
 
   // Look up start city name
   const startCityName = useMemo(() => {
@@ -130,6 +142,14 @@ export default function TripDayCard({
       {/* Mini elevation bar */}
       <MiniElevationBar startKm={slot.startKm} endKm={slot.endKm} />
 
+      {/* Waypoint stops for this day */}
+      {dayWaypoints.length > 0 && (
+        <WaypointStopStrip
+          waypoints={dayWaypoints}
+          dayStartKm={slot.startKm}
+        />
+      )}
+
       {/* Facility & warning row */}
       <View style={styles.facilityRow}>
         <View style={styles.facilityIcons}>
@@ -161,6 +181,49 @@ export default function TripDayCard({
         )}
       </View>
     </TouchableOpacity>
+  );
+}
+
+const WAYPOINT_CATEGORY_ICON: Record<WaypointCategory, string> = {
+  accommodation: '🏨',
+  sightseeing: '🏞️',
+  food: '🍜',
+  rest: '☕',
+  custom: '📍',
+};
+
+/** Horizontal strip showing waypoint stops for this day */
+function WaypointStopStrip({
+  waypoints,
+  dayStartKm,
+}: {
+  waypoints: Waypoint[];
+  dayStartKm: number;
+}) {
+  return (
+    <View style={styles.stopStrip}>
+      <View style={styles.stopStripHeader}>
+        <Text style={styles.stopStripLabel}>
+          立ち寄り {waypoints.length}
+        </Text>
+      </View>
+      <View style={styles.stopStripList}>
+        {waypoints.map((wp) => {
+          const offsetKm = wp.kmFromStart - dayStartKm;
+          return (
+            <View key={wp.id} style={styles.stopChip}>
+              <Text style={styles.stopChipIcon}>
+                {WAYPOINT_CATEGORY_ICON[wp.category] ?? '📍'}
+              </Text>
+              <Text style={styles.stopChipName} numberOfLines={1}>
+                {wp.nameZh ?? wp.name}
+              </Text>
+              <Text style={styles.stopChipKm}>+{Math.round(offsetKm)}km</Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
   );
 }
 
@@ -338,6 +401,54 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     overflow: 'hidden',
     backgroundColor: CyclingColors.background,
+  },
+  stopStrip: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: CyclingColors.divider,
+  },
+  stopStripHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  stopStripLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: CyclingColors.primary,
+    letterSpacing: 0.3,
+  },
+  stopStripList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  stopChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    backgroundColor: CyclingColors.primaryLight + '60',
+    borderWidth: 1,
+    borderColor: CyclingColors.primary + '30',
+    maxWidth: '100%',
+  },
+  stopChipIcon: {
+    fontSize: 12,
+  },
+  stopChipName: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: CyclingColors.textPrimary,
+    maxWidth: 100,
+  },
+  stopChipKm: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: CyclingColors.primary,
   },
   facilityRow: {
     flexDirection: 'row',

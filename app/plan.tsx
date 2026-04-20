@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { CyclingColors } from '@/constants/Colors';
 import { useTripStore } from '@/lib/store/tripStore';
 import { usePlanStore } from '@/lib/store/planStore';
+import { useWaypointStore } from '@/lib/store/waypointStore';
 import {
   autoGenerateTripPlan,
   recalculateFromDay,
@@ -19,6 +20,8 @@ import {
 } from '@/lib/logic/tripPlanner';
 import TripDayCard from '@/components/plan/TripDayCard';
 import DayEndpointPicker from '@/components/plan/DayEndpointPicker';
+import WaypointList from '@/components/plan/WaypointList';
+import WaypointPicker from '@/components/plan/WaypointPicker';
 import type { GoalCandidate } from '@/lib/types';
 import type { TripDaySlot } from '@/lib/store/tripStore';
 
@@ -28,20 +31,22 @@ export default function PlanScreen() {
   const currentKm = usePlanStore((s) => s.currentKm);
   const createTripPlan = useTripStore((s) => s.createTripPlan);
   const existingPlan = useTripStore((s) => s.tripPlan);
+  const waypoints = useWaypointStore((s) => s.waypoints);
 
   const [targetDaily, setTargetDaily] = useState(80);
   const [plan, setPlan] = useState<TripDaySlot[]>(existingPlan ?? []);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [editingDay, setEditingDay] = useState<number | null>(null);
+  const [waypointPickerVisible, setWaypointPickerVisible] = useState(false);
 
   // Trip statistics
   const stats = useMemo(() => getTripStats(plan), [plan]);
 
-  // Auto-generate the trip plan
+  // Auto-generate the trip plan (waypoints with accommodation become forced endpoints)
   const handleAutoGenerate = useCallback(() => {
-    const newPlan = autoGenerateTripPlan(currentKm, targetDaily);
+    const newPlan = autoGenerateTripPlan(currentKm, targetDaily, waypoints);
     setPlan(newPlan);
-  }, [currentKm, targetDaily]);
+  }, [currentKm, targetDaily, waypoints]);
 
   // Open endpoint picker for a specific day
   const handleChangeGoal = useCallback((dayNumber: number) => {
@@ -54,12 +59,18 @@ export default function PlanScreen() {
     (goal: GoalCandidate) => {
       if (editingDay == null) return;
 
-      const newPlan = recalculateFromDay(plan, editingDay, goal, targetDaily);
+      const newPlan = recalculateFromDay(
+        plan,
+        editingDay,
+        goal,
+        targetDaily,
+        waypoints,
+      );
       setPlan(newPlan);
       setPickerVisible(false);
       setEditingDay(null);
     },
-    [plan, editingDay, targetDaily],
+    [plan, editingDay, targetDaily, waypoints],
   );
 
   // Toggle skip status
@@ -172,6 +183,11 @@ export default function PlanScreen() {
           </View>
         </View>
 
+        {/* Waypoints section (BIWAICHI 風の立ち寄り地) */}
+        <WaypointList
+          onAddPress={() => setWaypointPickerVisible(true)}
+        />
+
         {/* Auto-generate button */}
         <TouchableOpacity
           style={styles.generateButton}
@@ -235,6 +251,12 @@ export default function PlanScreen() {
           }}
         />
       )}
+
+      {/* Waypoint picker modal */}
+      <WaypointPicker
+        visible={waypointPickerVisible}
+        onClose={() => setWaypointPickerVisible(false)}
+      />
     </SafeAreaView>
   );
 }

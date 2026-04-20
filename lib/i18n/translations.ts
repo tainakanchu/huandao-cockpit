@@ -60,6 +60,30 @@ const translations = {
     createPlanPrompt: '「自動生成」を押してプランを作成してください',
     startTrip: (days: number) => `トリップ開始 (${days}日間)`,
 
+    // Waypoints (BIWAICHI 風の経由地機能)
+    waypointsTitle: '経由地',
+    waypointsSubtitle: (count: number, max: number) =>
+      `${count} / ${max} 件`,
+    waypointsEmpty: '経由地はまだありません',
+    waypointsEmptyHint: '立ち寄りたい場所を追加すると、各日のプランに反映されます',
+    addWaypoint: '+ 経由地を追加',
+    addWaypointTitle: '経由地を追加',
+    waypointLimitReached: (max: number) =>
+      `経由地は最大 ${max} 件までです`,
+    clearWaypoints: 'すべて削除',
+    clearWaypointsConfirm: '経由地をすべて削除しますか？',
+    remove: '削除',
+    waypointCategoryAll: 'すべて',
+    waypointCategoryAccommodation: '🏨 宿泊',
+    waypointCategorySightseeing: '🏞️ 景勝地',
+    waypointCategoryMajor: '⭐ 主要都市',
+    waypointCategoryFood: '🍜 グルメ',
+    waypointCategoryCustom: '📍 カスタム',
+    added: '追加済',
+    dayStops: (count: number) => `立ち寄り ${count} 箇所`,
+    noStopsOnDay: '立ち寄り予定なし',
+    stopsOnDay: '立ち寄り',
+
     // Trip day card
     statusPlanned: '計画済',
     statusActive: '🔵 走行中',
@@ -259,6 +283,30 @@ const translations = {
     daySchedule: '日程規劃',
     createPlanPrompt: '請按「自動生成」來建立計畫',
     startTrip: (days: number) => `開始旅程 (${days}天)`,
+
+    // Waypoints
+    waypointsTitle: '途中停靠點',
+    waypointsSubtitle: (count: number, max: number) =>
+      `${count} / ${max} 個`,
+    waypointsEmpty: '尚未設定停靠點',
+    waypointsEmptyHint: '新增想順路造訪的地點，會反映至每日行程',
+    addWaypoint: '+ 新增停靠點',
+    addWaypointTitle: '新增停靠點',
+    waypointLimitReached: (max: number) =>
+      `停靠點最多 ${max} 個`,
+    clearWaypoints: '全部清除',
+    clearWaypointsConfirm: '確定要清除所有停靠點嗎？',
+    remove: '移除',
+    waypointCategoryAll: '全部',
+    waypointCategoryAccommodation: '🏨 住宿',
+    waypointCategorySightseeing: '🏞️ 景點',
+    waypointCategoryMajor: '⭐ 主要城市',
+    waypointCategoryFood: '🍜 美食',
+    waypointCategoryCustom: '📍 自訂',
+    added: '已加入',
+    dayStops: (count: number) => `停靠 ${count} 處`,
+    noStopsOnDay: '當日無停靠',
+    stopsOnDay: '停靠點',
 
     statusPlanned: '已規劃',
     statusActive: '🔵 進行中',

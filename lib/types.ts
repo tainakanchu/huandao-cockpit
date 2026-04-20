@@ -159,6 +159,31 @@ export type SupplyPoint = {
   localFood?: string;
 };
 
+// 2.9.5 経由地 / Via Point
+// BIWAICHI Cycling Navi 風の「ベースルート + 任意の経由地」パターン。
+// ルートは線形 (km 0 → 946) なので、経由地は kmFromStart 順にソートされる。
+export type WaypointCategory =
+  | 'sightseeing'   // 観光スポット・景勝地
+  | 'food'          // 飲食・名物
+  | 'rest'          // 休憩・カフェ
+  | 'accommodation' // 宿泊可能
+  | 'custom';       // ユーザー自由入力
+
+export type WaypointSourceType = 'goal' | 'checkpoint' | 'custom';
+
+export type Waypoint = {
+  id: string;
+  name: string;
+  nameZh?: string;
+  lat: number;
+  lng: number;
+  kmFromStart: number;
+  category: WaypointCategory;
+  sourceType: WaypointSourceType;
+  sourceId?: string;  // 元となった Goal / Checkpoint の id
+  note?: string;
+};
+
 // 2.10 自行車友善旅宿
 export type BikeHotel = {
   id: string;
