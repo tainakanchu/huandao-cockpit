@@ -1,6 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useWaypointStore } from '@/lib/store/waypointStore';
+import {
+  estimateTravelTime,
+  countWaypointsInRange,
+} from '@/lib/logic/eta';
 import type { DayPlan, SunTimes } from '@/lib/types';
 
 type Props = {
@@ -14,11 +19,11 @@ function formatTime(date: Date): string {
   return `${h}:${m}`;
 }
 
-function estimateRideTime(distanceKm: number, elevationGainM: number): number {
-  // Average 20km/h on flat, adjusted for climbing (1h per 600m elevation)
-  const flatHours = distanceKm / 20;
-  const climbHours = elevationGainM / 600;
-  return Math.round((flatHours + climbHours) * 60); // minutes
+function formatHM(hours: number): string {
+  const totalMin = Math.round(hours * 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return `${h}h${m.toString().padStart(2, '0')}m`;
 }
 
 function getWeatherSummary(plan: DayPlan) {
@@ -53,15 +58,24 @@ function getWeatherSummary(plan: DayPlan) {
 }
 
 export default function SummaryCard({ plan, sunTimes }: Props) {
-  const estMinutes = estimateRideTime(plan.distanceKm, plan.elevationGainM);
-  const estHours = Math.floor(estMinutes / 60);
-  const estMins = estMinutes % 60;
+  const waypoints = useWaypointStore((s) => s.waypoints);
+  const { total: waypointCount, food: foodWaypointCount } = countWaypointsInRange(
+    waypoints,
+    plan.startKm,
+    plan.endKm,
+  );
 
-  // Calculate ETA based on 7:00 start
-  const now = new Date();
-  const startTime = new Date(now);
+  const estimate = estimateTravelTime(plan.distanceKm, plan.elevationGainM, {
+    waypointCount,
+    foodWaypointCount,
+  });
+
+  // Calculate ETA from 7:00 start using TOTAL time (moving + stops)
+  const startTime = new Date();
   startTime.setHours(7, 0, 0, 0);
-  const eta = new Date(startTime.getTime() + estMinutes * 60 * 1000);
+  const eta = new Date(
+    startTime.getTime() + estimate.totalHours * 60 * 60 * 1000,
+  );
 
   // Sunset margin
   let sunsetMargin = '--';
@@ -88,8 +102,14 @@ export default function SummaryCard({ plan, sunTimes }: Props) {
     { icon: '⛰️', label: '獲得標高', value: `${plan.elevationGainM} m` },
     {
       icon: '⏱️',
-      label: '予想時間',
-      value: `${estHours}h${estMins.toString().padStart(2, '0')}m`,
+      label: '走行時間',
+      value: formatHM(estimate.movingHours),
+    },
+    {
+      icon: '🕒',
+      label: '所要時間',
+      value: formatHM(estimate.totalHours),
+      sub: `+休憩 ${Math.round(estimate.stopHours * 60)}分`,
     },
     { icon: '🏁', label: 'ETA', value: formatTime(eta) },
     { icon: '🌅', label: '日没余裕', value: sunsetMargin },
@@ -107,6 +127,9 @@ export default function SummaryCard({ plan, sunTimes }: Props) {
             <Text style={styles.metricIcon}>{m.icon}</Text>
             <Text style={styles.metricLabel}>{m.label}</Text>
             <Text style={styles.metricValue}>{m.value}</Text>
+            {'sub' in m && m.sub ? (
+              <Text style={styles.metricSub}>{m.sub}</Text>
+            ) : null}
           </View>
         ))}
       </View>
@@ -155,5 +178,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: CyclingColors.textPrimary,
+  },
+  metricSub: {
+    fontSize: 10,
+    color: CyclingColors.textLight,
+    marginTop: 2,
   },
 });
