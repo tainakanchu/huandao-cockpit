@@ -1,0 +1,20 @@
+# Cloudflare Pages headers
+# SW must be served fresh (no cache), same-origin scope needs allowed
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+  Service-Worker-Allowed: /
+
+/manifest.webmanifest
+  Content-Type: application/manifest+json
+  Cache-Control: public, max-age=3600
+
+# Static assets can be cached longer
+/icons/*
+  Cache-Control: public, max-age=604800
+
+/_expo/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML should revalidate
+/
+  Cache-Control: public, max-age=0, must-revalidate

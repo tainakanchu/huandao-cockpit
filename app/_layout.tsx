@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useT } from '@/lib/i18n';
 import LanguageSwitcher from '@/components/common/LanguageSwitcher';
+import OfflineBanner from '@/components/common/OfflineBanner';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -47,6 +48,7 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <OfflineBanner />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: '#1B7A3D' },

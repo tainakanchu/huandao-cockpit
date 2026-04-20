@@ -29,7 +29,15 @@
     "web": {
       "bundler": "metro",
       "output": "single",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "環島コックピット",
+      "shortName": "環島",
+      "description": "台湾環島サイクリングの判断補助アプリ",
+      "themeColor": "#1B7A3D",
+      "backgroundColor": "#FAF8F5",
+      "display": "standalone",
+      "orientation": "portrait",
+      "lang": "ja"
     },
     "plugins": [
       "expo-router",

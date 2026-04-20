@@ -7,7 +7,9 @@
     "android": "nix develop -c bash -c 'adb reverse tcp:8081 tcp:8081 2>/dev/null; pnpm exec expo run:android'",
     "android:release": "nix develop -c bash -c 'cd android && ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a && echo \"\\n✅ APK: $(pwd)/app/build/outputs/apk/release/app-release.apk\"'",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "web:build": "expo export --platform web && node scripts/inject-pwa.mjs",
+    "web:deploy": "pnpm run web:build && npx wrangler@latest pages deploy ./dist --project-name=huandao-cockpit --commit-dirty=true"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^3.0.2",
