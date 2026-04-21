@@ -47,19 +47,44 @@ export default function TodayScreen() {
     const destination = getCoordinateAtKm(dayPlan.endKm);
     if (!origin || !destination) return;
 
-    const dayWaypoints = waypoints
+    // ユーザの立ち寄り点（実座標）
+    const userWp = waypoints
       .filter(
         (w) =>
           w.kmFromStart > dayPlan.startKm + 0.5 &&
           w.kmFromStart < dayPlan.endKm - 0.5,
       )
+      .sort((a, b) => a.kmFromStart - b.kmFromStart)
+      .map((w) => ({ lat: w.lat, lng: w.lng, km: w.kmFromStart }));
+
+    // Google Maps は waypoint 間をそれぞれ「最短ルート」で結ぶため、
+    // 環島一號線沿いの代表点を挟むことで実際のルートに近づける。
+    // ユーザ waypoint と合わせて最大 9 点になるよう、残り枠を等間隔で埋める。
+    const routeSpots: { lat: number; lng: number; km: number }[] = [];
+    const remaining = GOOGLE_MAPS_WAYPOINT_LIMIT - userWp.length;
+    if (remaining > 0) {
+      const totalKm = dayPlan.endKm - dayPlan.startKm;
+      const step = totalKm / (remaining + 1);
+      // ユーザ waypoint と重なりすぎないための許容間隔
+      const minGap = step * 0.4;
+      for (let i = 1; i <= remaining; i++) {
+        const km = dayPlan.startKm + step * i;
+        if (userWp.some((u) => Math.abs(u.km - km) < minGap)) continue;
+        const p = getCoordinateAtKm(km);
+        if (p) routeSpots.push({ lat: p.lat, lng: p.lng, km });
+      }
+    }
+
+    // km 順にマージ
+    const merged = [...userWp, ...routeSpots]
+      .sort((a, b) => a.km - b.km)
       .slice(0, GOOGLE_MAPS_WAYPOINT_LIMIT)
       .map((w) => ({ lat: w.lat, lng: w.lng }));
 
     const url = buildGoogleMapsDirectionsUrl({
       origin,
       destination,
-      waypoints: dayWaypoints,
+      waypoints: merged,
       travelMode: 'bicycling',
     });
 
