@@ -17,6 +17,11 @@ import {
 } from '@/lib/data/route';
 import { useWaypointStore } from '@/lib/store/waypointStore';
 import type { WaypointCategory } from '@/lib/types';
+import taiwanOutlineData from '@/assets/data/taiwan-outline.json';
+
+// Simplified Taiwan main-island outline as [lng, lat] polygon (~37 points).
+// Used as a light background overlay so the route is geographically recognizable.
+const TAIWAN_OUTLINE = taiwanOutlineData as [number, number][];
 
 type Props = {
   /** Current rider position in km from route start. */
@@ -164,6 +169,12 @@ export default function RouteMap({
     return pointsToPath(highlightCoords, project);
   }, [highlightCoords, mode]);
 
+  // Taiwan outline as a closed polygon path (used as background overlay)
+  const taiwanPath = useMemo(() => {
+    if (TAIWAN_OUTLINE.length === 0) return '';
+    return pointsToPath(TAIWAN_OUTLINE, project) + ' Z';
+  }, [project]);
+
   // Current position
   const currentPos = useMemo(() => {
     if (currentKm === undefined) return null;
@@ -202,6 +213,16 @@ export default function RouteMap({
           viewBox={`0 0 ${canvasW} ${canvasH}`}
           preserveAspectRatio="xMidYMid meet"
         >
+          {/* Taiwan island background overlay */}
+          <Path
+            d={taiwanPath}
+            fill={CyclingColors.primaryLight}
+            fillOpacity={0.55}
+            stroke={CyclingColors.textLight}
+            strokeWidth={0.8}
+            strokeOpacity={0.7}
+          />
+
           {/* Base (or day segment) route line */}
           <Path
             d={fullPath}
