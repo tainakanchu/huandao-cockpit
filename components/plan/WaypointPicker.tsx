@@ -316,7 +316,7 @@ export default function WaypointPicker({
             onPress={() => setOsmVisible(true)}
             activeOpacity={0.7}
           >
-            <Text style={styles.osmButtonText}>🔍 OSM で場所を検索</Text>
+            <Text style={styles.osmButtonText}>🔍 場所を検索して追加</Text>
           </TouchableOpacity>
         </View>
 

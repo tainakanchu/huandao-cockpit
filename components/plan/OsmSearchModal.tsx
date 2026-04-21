@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   SafeAreaView,
   FlatList,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
 import { searchNominatim, type OsmSearchResult } from '@/lib/api/osmSearch';
@@ -29,6 +28,13 @@ type Props = {
   dayStartKm?: number;
   dayEndKm?: number;
 };
+
+type Notice =
+  | { type: 'added'; name: string; km: number }
+  | { type: 'duplicate' }
+  | { type: 'limit' }
+  | { type: 'error'; message: string }
+  | null;
 
 /** Convert OSM category/type to our waypoint category for a reasonable icon. */
 function deriveCategory(r: OsmSearchResult): WaypointCategory {
@@ -70,10 +76,15 @@ export default function OsmSearchModal({
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<OsmSearchResult[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const waypoints = useWaypointStore((s) => s.waypoints);
   const addWaypoint = useWaypointStore((s) => s.addWaypoint);
+
+  // Precomputed route coords (stable across renders)
+  const routeCoords = useMemo(() => getRouteCoordinates(), []);
+  const cumKm = useMemo(() => getCumulativeKm(), []);
 
   const runSearch = useCallback(async () => {
     const q = query.trim();
@@ -85,6 +96,7 @@ export default function OsmSearchModal({
 
     setLoading(true);
     setError(null);
+    setNotice(null);
     try {
       const res = await searchNominatim(q, { signal: ctrl.signal });
       setResults(res);
@@ -96,21 +108,18 @@ export default function OsmSearchModal({
     }
   }, [query]);
 
-  const handleAdd = (r: OsmSearchResult) => {
-    if (waypoints.length >= WAYPOINT_LIMIT) {
-      Alert.alert('経由地の上限', `経由地は最大 ${WAYPOINT_LIMIT} 件までです`);
-      return;
-    }
+  const handleAdd = useCallback(
+    (r: OsmSearchResult) => {
+      // Over-limit?
+      if (waypoints.length >= WAYPOINT_LIMIT) {
+        setNotice({ type: 'limit' });
+        return;
+      }
 
-    // Snap the POI to the base route
-    const coords = getRouteCoordinates();
-    const cumKm = getCumulativeKm();
-    const snapped = snapToRoute(r.lat, r.lng, coords, cumKm);
-    const detourKm = haversineDistance(r.lat, r.lng, snapped.lat, snapped.lng);
+      // Snap and compute detour distance for metadata only.
+      const snapped = snapToRoute(r.lat, r.lng, routeCoords, cumKm);
+      const category = deriveCategory(r);
 
-    const category = deriveCategory(r);
-
-    const doAdd = () => {
       const ok = addWaypoint({
         name: r.shortName,
         nameZh: undefined,
@@ -122,43 +131,43 @@ export default function OsmSearchModal({
         sourceId: `osm:${r.id}`,
         note: r.displayName,
       });
-      if (ok) {
-        Alert.alert('追加しました', `${r.shortName} (KP ${Math.round(snapped.km)}km)`);
-        onClose();
-      } else {
-        Alert.alert('追加できません', '同じ POI が既に登録されているか、上限に達しています。');
-      }
-    };
 
-    if (detourKm > 5) {
-      Alert.alert(
-        '経路から離れています',
-        `最寄りのルートから ${detourKm.toFixed(1)}km 離れています。経由地はルート上(KP ${Math.round(snapped.km)}km)に設定されます。追加しますか？`,
-        [
-          { text: 'キャンセル', style: 'cancel' },
-          { text: '追加', onPress: doAdd },
-        ],
-      );
-    } else {
-      doAdd();
-    }
-  };
+      if (ok) {
+        setNotice({
+          type: 'added',
+          name: r.shortName,
+          km: Math.round(snapped.km),
+        });
+      } else {
+        setNotice({ type: 'duplicate' });
+      }
+    },
+    [addWaypoint, waypoints.length, routeCoords, cumKm],
+  );
 
   const renderItem = ({ item }: { item: OsmSearchResult }) => {
-    const coords = getRouteCoordinates();
-    const cumKm = getCumulativeKm();
-    const snapped = snapToRoute(item.lat, item.lng, coords, cumKm);
-    const detourKm = haversineDistance(item.lat, item.lng, snapped.lat, snapped.lng);
+    const snapped = snapToRoute(item.lat, item.lng, routeCoords, cumKm);
+    const detourKm = haversineDistance(
+      item.lat,
+      item.lng,
+      snapped.lat,
+      snapped.lng,
+    );
     const inToday =
       dayStartKm !== undefined &&
       dayEndKm !== undefined &&
       snapped.km >= dayStartKm &&
       snapped.km <= dayEndKm;
 
+    const alreadyAdded = waypoints.some(
+      (w) => w.sourceType === 'custom' && w.sourceId === `osm:${item.id}`,
+    );
+
     return (
       <TouchableOpacity
-        style={styles.item}
-        onPress={() => handleAdd(item)}
+        style={[styles.item, alreadyAdded && styles.itemAdded]}
+        onPress={() => !alreadyAdded && handleAdd(item)}
+        disabled={alreadyAdded}
         activeOpacity={0.7}
       >
         <View style={styles.itemBody}>
@@ -181,12 +190,46 @@ export default function OsmSearchModal({
             {inToday && <Text style={styles.itemTodayBadge}>今日の区間</Text>}
           </View>
         </View>
-        <View style={styles.plusBadge}>
-          <Text style={styles.plusBadgeText}>+</Text>
+        <View style={[styles.plusBadge, alreadyAdded && styles.plusBadgeAdded]}>
+          <Text style={styles.plusBadgeText}>{alreadyAdded ? '✓' : '+'}</Text>
         </View>
       </TouchableOpacity>
     );
   };
+
+  const noticeNode = (() => {
+    if (!notice) return null;
+    if (notice.type === 'added') {
+      return (
+        <View style={[styles.noticeBox, styles.noticeBoxSuccess]}>
+          <Text style={styles.noticeText}>
+            ✓ {notice.name} を追加しました (KP {notice.km}km)
+          </Text>
+        </View>
+      );
+    }
+    if (notice.type === 'duplicate') {
+      return (
+        <View style={[styles.noticeBox, styles.noticeBoxWarn]}>
+          <Text style={styles.noticeText}>既に追加済みです</Text>
+        </View>
+      );
+    }
+    if (notice.type === 'limit') {
+      return (
+        <View style={[styles.noticeBox, styles.noticeBoxWarn]}>
+          <Text style={styles.noticeText}>
+            経由地は最大 {WAYPOINT_LIMIT} 件までです
+          </Text>
+        </View>
+      );
+    }
+    return (
+      <View style={[styles.noticeBox, styles.noticeBoxError]}>
+        <Text style={styles.noticeText}>追加失敗: {notice.message}</Text>
+      </View>
+    );
+  })();
 
   return (
     <Modal
@@ -197,7 +240,7 @@ export default function OsmSearchModal({
     >
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>🔍 OSM で場所を検索</Text>
+          <Text style={styles.headerTitle}>🔍 場所を検索</Text>
           <TouchableOpacity
             style={styles.closeButton}
             onPress={onClose}
@@ -230,8 +273,10 @@ export default function OsmSearchModal({
         </View>
 
         <Text style={styles.hint}>
-          OpenStreetMap / Nominatim から検索。結果はルート上にスナップされます。
+          名前や地名で検索できます。結果はルート上にスナップされます。
         </Text>
+
+        {noticeNode}
 
         {loading && (
           <View style={styles.loadingBox}>
@@ -332,6 +377,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
+
+  noticeBox: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  noticeBoxSuccess: {
+    backgroundColor: CyclingColors.primaryLight,
+    borderWidth: 1,
+    borderColor: CyclingColors.primary,
+  },
+  noticeBoxWarn: {
+    backgroundColor: CyclingColors.severity.warningBg,
+    borderWidth: 1,
+    borderColor: CyclingColors.severity.warning,
+  },
+  noticeBoxError: {
+    backgroundColor: CyclingColors.severity.criticalBg,
+    borderWidth: 1,
+    borderColor: CyclingColors.severity.critical,
+  },
+  noticeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: CyclingColors.textPrimary,
+  },
+
   loadingBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -378,6 +452,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 3,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  itemAdded: {
+    borderColor: CyclingColors.primary,
+    backgroundColor: CyclingColors.primaryLight + '40',
+    opacity: 0.85,
   },
   itemBody: {
     flex: 1,
@@ -433,6 +514,9 @@ const styles = StyleSheet.create({
     backgroundColor: CyclingColors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  plusBadgeAdded: {
+    backgroundColor: CyclingColors.success,
   },
   plusBadgeText: {
     fontSize: 18,
