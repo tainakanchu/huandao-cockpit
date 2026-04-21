@@ -158,16 +158,23 @@ export default function RouteMap({
     return [x, y];
   }
 
-  // Build SVG path for the full route (or just day segment in day mode)
-  const fullPath = useMemo(() => {
-    const pts = mode === 'full' ? coords : highlightCoords ?? coords;
-    return pointsToPath(pts, project);
-  }, [mode, coords, highlightCoords]);
+  // 環島一號線（全 946km）— 常に背景として描画する参照線
+  const huandaoFullPath = useMemo(
+    () => pointsToPath(coords, project),
+    [coords, project],
+  );
 
-  const highlightPath = useMemo(() => {
-    if (!highlightCoords || mode === 'day') return null;
+  // 今日の区間 (day mode でのメインのルート)
+  const daySegmentPath = useMemo(() => {
+    if (mode !== 'day' || !highlightCoords) return null;
     return pointsToPath(highlightCoords, project);
-  }, [highlightCoords, mode]);
+  }, [mode, highlightCoords, project]);
+
+  // full mode での強調区間（trip 進行中なら今日の区間）
+  const fullModeHighlight = useMemo(() => {
+    if (mode !== 'full' || !highlightCoords) return null;
+    return pointsToPath(highlightCoords, project);
+  }, [mode, highlightCoords, project]);
 
   // Taiwan outline as a closed polygon path (used as background overlay)
   const taiwanPath = useMemo(() => {
@@ -223,25 +230,33 @@ export default function RouteMap({
             strokeOpacity={0.5}
           />
 
-          {/* Base (or day segment) route line — red for visibility over green fill */}
+          {/* 環島一號線（全ルートの参照線）— 常に青で表示 */}
           <Path
-            d={fullPath}
-            stroke={
-              mode === 'full'
-                ? CyclingColors.accent
-                : CyclingColors.primaryDark
-            }
-            strokeWidth={mode === 'full' ? 1.8 : 2.4}
+            d={huandaoFullPath}
+            stroke={CyclingColors.supply.water}
+            strokeWidth={mode === 'full' ? 1.6 : 1.3}
+            strokeOpacity={mode === 'full' ? 0.7 : 0.5}
             fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity={mode === 'full' ? 0.85 : 1}
           />
 
-          {/* Highlighted day segment overlay (only when mode=full) */}
-          {highlightPath && (
+          {/* 今日の区間 (day mode) — 朱赤で目立たせる */}
+          {daySegmentPath && (
             <Path
-              d={highlightPath}
+              d={daySegmentPath}
+              stroke={CyclingColors.accent}
+              strokeWidth={2.8}
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          )}
+
+          {/* 強調区間 (full mode) — 濃い緑 */}
+          {fullModeHighlight && (
+            <Path
+              d={fullModeHighlight}
               stroke={CyclingColors.primaryDark}
               strokeWidth={3.2}
               fill="none"
@@ -339,9 +354,16 @@ export default function RouteMap({
         </Svg>
       </View>
 
-      {title !== null && waypointsInRange.length > 0 && (
+      {title !== null && (
         <Text style={styles.hint}>
-          ● 経由地 {waypointsInRange.length}  ·  ● 現在地  ·  ● 今日のゴール
+          <Text style={{ color: CyclingColors.supply.water }}>━</Text> 環島一號線
+          {mode === 'day' ? (
+            <>
+              {'  ·  '}
+              <Text style={{ color: CyclingColors.accent }}>━</Text> 今日の区間
+            </>
+          ) : null}
+          {waypointsInRange.length > 0 ? `  ·  ● 経由地 ${waypointsInRange.length}` : ''}
         </Text>
       )}
     </View>

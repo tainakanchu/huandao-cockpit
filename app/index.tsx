@@ -18,6 +18,7 @@ import DistanceQuickPick from '@/components/home/DistanceQuickPick';
 import PositionAdjuster from '@/components/home/PositionAdjuster';
 import RouteMap from '@/components/common/RouteMap';
 import type { TotalProgress } from '@/lib/store/tripStore';
+import { VERSION } from '@/lib/version';
 import { useT } from '@/lib/i18n';
 import type { GoalCandidate } from '@/lib/types';
 
@@ -228,6 +229,9 @@ export default function HomeScreen() {
           </Text>
         </View>
       )}
+
+      {/* Version footer */}
+      <Text style={styles.versionFooter}>v {VERSION}</Text>
     </SafeAreaView>
   );
 }
@@ -355,5 +359,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: CyclingColors.primary,
+  },
+  versionFooter: {
+    fontSize: 10,
+    color: CyclingColors.textLight,
+    textAlign: 'center',
+    paddingVertical: 6,
+    fontFamily: 'SpaceMono',
   },
 });
