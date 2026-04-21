@@ -17,20 +17,19 @@ import GoalSelector from '@/components/home/GoalSelector';
 import DistanceQuickPick from '@/components/home/DistanceQuickPick';
 import PositionAdjuster from '@/components/home/PositionAdjuster';
 import RouteMap from '@/components/common/RouteMap';
+import type { TotalProgress } from '@/lib/store/tripStore';
 import { useT } from '@/lib/i18n';
 import type { GoalCandidate } from '@/lib/types';
 
 export default function HomeScreen() {
   const t = useT();
   const currentKm = usePlanStore((s) => s.currentKm);
-  const dayNumber = usePlanStore((s) => s.dayNumber);
   const selectGoal = usePlanStore((s) => s.selectGoal);
   const setCurrentKm = usePlanStore((s) => s.setCurrentKm);
   const isLoading = usePlanStore((s) => s.isLoading);
 
-  const tripPlan = useTripStore((s) => s.tripPlan);
+  const dayHistory = useTripStore((s) => s.dayHistory);
   const getTotalProgress = useTripStore((s) => s.getTotalProgress);
-  const getCurrentDaySlot = useTripStore((s) => s.getCurrentDaySlot);
 
   const [showMinor, setShowMinor] = useState(false);
   const [activeDistance, setActiveDistance] = useState<number | undefined>(
@@ -163,81 +162,35 @@ export default function HomeScreen() {
       <RouteMap
         mode="full"
         currentKm={currentKm}
-        highlightStartKm={
-          (tripPlan && getCurrentDaySlot(dayNumber)?.startKm) || undefined
-        }
-        highlightEndKm={
-          (tripPlan && getCurrentDaySlot(dayNumber)?.endKm) || undefined
-        }
         title={null}
         height={140}
       />
 
-      {/* Trip Plan & History Buttons */}
+      {/* History button + cumulative stats */}
       <View style={styles.tripSection}>
-        <View style={styles.tripButtonRow}>
-          <TouchableOpacity
-            style={[styles.tripPlanButton, { flex: 1 }]}
-            onPress={() => router.push('/plan')}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.tripPlanButtonIcon}>🗺️</Text>
-            <View style={styles.tripPlanButtonContent}>
-              <Text style={styles.tripPlanButtonText}>{t.tripPlan}</Text>
-              {tripPlan ? (
-                <Text style={styles.tripPlanButtonSub}>
-                  {t.daysOfPlan(tripPlan.length)}
+        <TouchableOpacity
+          style={styles.historyRow}
+          onPress={() => router.push('/history')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.historyRowIcon}>📖</Text>
+          <View style={styles.historyRowBody}>
+            <Text style={styles.historyRowTitle}>{t.history}</Text>
+            {dayHistory.length > 0 ? (() => {
+              const p: TotalProgress = getTotalProgress();
+              return (
+                <Text style={styles.historyRowSub}>
+                  {p.completedRides} 回 · 累計 {p.completedKm.toFixed(0)}km
                 </Text>
-              ) : (
-                <Text style={styles.tripPlanButtonSub}>
-                  {t.createPlan}
-                </Text>
-              )}
-            </View>
-            <Text style={styles.tripPlanButtonArrow}>→</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.historyButton}
-            onPress={() => router.push('/history')}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.historyButtonIcon}>📖</Text>
-            <Text style={styles.historyButtonText}>{t.history}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {tripPlan && (() => {
-          const progress = getTotalProgress();
-          const pct = progress.totalKm > 0
-            ? Math.round((progress.completedKm / progress.totalKm) * 100)
-            : 0;
-          const currentSlot = getCurrentDaySlot(dayNumber);
-
-          return (
-            <View style={styles.tripProgressCard}>
-              <View style={styles.tripProgressHeader}>
-                <Text style={styles.tripProgressLabel}>
-                  Day {progress.completedDays + 1} of {progress.totalDays}
-                </Text>
-                <Text style={styles.tripProgressPct}>{pct}%</Text>
-              </View>
-              <View style={styles.tripProgressBarBg}>
-                <View
-                  style={[
-                    styles.tripProgressBarFill,
-                    { width: `${Math.min(100, pct)}%` },
-                  ]}
-                />
-              </View>
-              {currentSlot && (
-                <Text style={styles.tripProgressGoal}>
-                  {t.todayGoalLabel(currentSlot.goalNameZh, currentSlot.distanceKm.toFixed(0))}
-                </Text>
-              )}
-            </View>
-          );
-        })()}
+              );
+            })() : (
+              <Text style={styles.historyRowSub}>
+                走行を完了するとここに記録されます
+              </Text>
+            )}
+          </View>
+          <Text style={styles.historyRowArrow}>→</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Distance Quick Pick */}
@@ -361,115 +314,46 @@ const styles = StyleSheet.create({
     color: CyclingColors.textSecondary,
   },
 
-  // Trip Plan section
+  // History entry
   tripSection: {
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 2,
   },
-  tripPlanButton: {
+  historyRow: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: CyclingColors.card,
     borderRadius: 14,
     padding: 14,
-    borderWidth: 2,
-    borderColor: CyclingColors.primary + '30',
+    borderWidth: 1,
+    borderColor: CyclingColors.divider,
     elevation: 1,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.06,
     shadowRadius: 3,
   },
-  tripPlanButtonIcon: {
-    fontSize: 24,
+  historyRowIcon: {
+    fontSize: 22,
     marginRight: 12,
   },
-  tripPlanButtonContent: {
+  historyRowBody: {
     flex: 1,
   },
-  tripPlanButtonText: {
-    fontSize: 16,
+  historyRowTitle: {
+    fontSize: 15,
     fontWeight: '700',
     color: CyclingColors.textPrimary,
   },
-  tripPlanButtonSub: {
+  historyRowSub: {
     fontSize: 12,
     color: CyclingColors.textSecondary,
-    marginTop: 1,
+    marginTop: 2,
   },
-  tripPlanButtonArrow: {
+  historyRowArrow: {
     fontSize: 18,
     fontWeight: '700',
     color: CyclingColors.primary,
-  },
-  tripButtonRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  historyButton: {
-    backgroundColor: CyclingColors.card,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 2,
-    borderColor: CyclingColors.accent + '30',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    width: 70,
-  },
-  historyButtonIcon: {
-    fontSize: 22,
-    marginBottom: 2,
-  },
-  historyButtonText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: CyclingColors.accent,
-  },
-  tripProgressCard: {
-    backgroundColor: CyclingColors.card,
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: CyclingColors.divider,
-  },
-  tripProgressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  tripProgressLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: CyclingColors.textPrimary,
-  },
-  tripProgressPct: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: CyclingColors.primary,
-  },
-  tripProgressBarBg: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: CyclingColors.primaryLight,
-    overflow: 'hidden',
-  },
-  tripProgressBarFill: {
-    height: '100%',
-    borderRadius: 3,
-    backgroundColor: CyclingColors.primary,
-  },
-  tripProgressGoal: {
-    fontSize: 12,
-    color: CyclingColors.textSecondary,
-    marginTop: 6,
-    fontWeight: '600',
   },
 });

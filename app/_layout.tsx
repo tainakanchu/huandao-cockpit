@@ -80,13 +80,6 @@ function RootLayoutNav() {
           }}
         />
         <Stack.Screen
-          name="plan"
-          options={{
-            title: t.tripPlan,
-            headerBackTitle: t.home,
-          }}
-        />
-        <Stack.Screen
           name="summary"
           options={{
             title: t.daySummary,

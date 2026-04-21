@@ -19,9 +19,8 @@ export default function HistoryScreen() {
   const dayHistory = useTripStore((s) => s.dayHistory);
   const getTotalProgress = useTripStore((s) => s.getTotalProgress);
   const deleteDayRecord = useTripStore((s) => s.deleteDayRecord);
-  const undoLastDay = useTripStore((s) => s.undoLastDay);
+  const undoLastRide = useTripStore((s) => s.undoLastRide);
   const setCurrentKm = usePlanStore((s) => s.setCurrentKm);
-  const setDayNumber = usePlanStore((s) => s.setDayNumber);
 
   const formatTime = (minutes: number): string => {
     if (minutes <= 0) return '--';
@@ -30,9 +29,9 @@ export default function HistoryScreen() {
     return `${h}h${m.toString().padStart(2, '0')}m`;
   };
 
-  const handleDelete = (dayNumber: number) => {
+  const handleDelete = (dayNumber: number, label: string) => {
     Alert.alert(
-      t.dayLabel(dayNumber),
+      label,
       t.deleteRecordConfirm,
       [
         { text: t.cancel, style: 'cancel' },
@@ -45,42 +44,25 @@ export default function HistoryScreen() {
     );
   };
 
-  const handleUndoLastDay = () => {
-    const lastDay = dayHistory[dayHistory.length - 1];
-    if (!lastDay) return;
+  const handleUndoLastRide = () => {
+    const last = dayHistory[dayHistory.length - 1];
+    if (!last) return;
 
     Alert.alert(
       t.undoLastDay,
-      t.undoLastDayConfirm(lastDay.goalName),
+      t.undoLastDayConfirm(last.goalName),
       [
         { text: t.cancel, style: 'cancel' },
         {
           text: t.undo,
           style: 'destructive',
           onPress: () => {
-            const removed = undoLastDay();
-            if (removed) {
-              // Revert planStore to the day that was undone
-              setDayNumber(removed.dayNumber);
-              // Revert position to the start of that day
-              // The previous day's end km ≈ this day's start km
-              const prevDay = dayHistory.find(
-                (d) => d.dayNumber === removed.dayNumber - 1,
-              );
-              if (prevDay) {
-                // Find the goal's km from tripPlan
-                const tripPlan = useTripStore.getState().tripPlan;
-                const prevSlot = tripPlan?.find(
-                  (s) => s.dayNumber === prevDay.dayNumber,
-                );
-                if (prevSlot) {
-                  setCurrentKm(prevSlot.endKm);
-                }
-              } else {
-                setCurrentKm(0); // Back to start
-              }
-              router.replace('/');
+            const removed = undoLastRide();
+            if (removed && removed.startKm !== undefined) {
+              // Move current position back to the start of the undone ride
+              setCurrentKm(removed.startKm);
             }
+            router.replace('/');
           },
         },
       ],
@@ -100,14 +82,6 @@ export default function HistoryScreen() {
   }
 
   const progress = getTotalProgress();
-  const totalRidingMinutes = dayHistory.reduce(
-    (sum, d) => sum + d.ridingMinutes,
-    0,
-  );
-  const totalElevation = dayHistory.reduce(
-    (sum, d) => sum + d.elevationGainM,
-    0,
-  );
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -116,19 +90,9 @@ export default function HistoryScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Progress summary */}
+        {/* Cumulative stats */}
         <View style={styles.progressCard}>
           <Text style={styles.progressTitle}>{t.totalProgress}</Text>
-          <View style={styles.progressBarBg}>
-            <View
-              style={[
-                styles.progressBarFill,
-                {
-                  width: `${progress.totalKm > 0 ? Math.min(100, Math.round((progress.completedKm / progress.totalKm) * 100)) : 0}%`,
-                },
-              ]}
-            />
-          </View>
           <View style={styles.progressStats}>
             <View style={styles.progressStat}>
               <Text style={styles.progressStatValue}>
@@ -138,15 +102,13 @@ export default function HistoryScreen() {
             </View>
             <View style={styles.progressStat}>
               <Text style={styles.progressStatValue}>
-                {progress.completedDays}
+                {progress.completedRides}
               </Text>
-              <Text style={styles.progressStatLabel}>
-                {t.completedDays}
-              </Text>
+              <Text style={styles.progressStatLabel}>回</Text>
             </View>
             <View style={styles.progressStat}>
               <Text style={styles.progressStatValue}>
-                {formatTime(totalRidingMinutes)}
+                {formatTime(progress.totalRidingMinutes)}
               </Text>
               <Text style={styles.progressStatLabel}>
                 {t.totalRidingTime}
@@ -154,40 +116,35 @@ export default function HistoryScreen() {
             </View>
             <View style={styles.progressStat}>
               <Text style={styles.progressStatValue}>
-                {totalElevation}
+                {progress.totalElevationM}
               </Text>
               <Text style={styles.progressStatLabel}>m</Text>
             </View>
           </View>
         </View>
 
-        {/* Undo last day button */}
+        {/* Undo last ride button */}
         <TouchableOpacity
           style={styles.undoButton}
-          onPress={handleUndoLastDay}
+          onPress={handleUndoLastRide}
           activeOpacity={0.7}
         >
           <Text style={styles.undoButtonText}>{t.undoLastDay}</Text>
         </TouchableOpacity>
 
-        {/* Day list */}
+        {/* Ride list (most recent first) */}
         {[...dayHistory].reverse().map((record) => (
           <View key={record.dayNumber} style={styles.dayCard}>
             <View style={styles.dayHeader}>
-              <View style={styles.dayBadge}>
-                <Text style={styles.dayBadgeText}>
-                  {t.dayLabel(record.dayNumber)}
-                </Text>
-              </View>
-              <View style={styles.dayHeaderRight}>
-                <Text style={styles.dayDate}>{record.date}</Text>
-                <TouchableOpacity
-                  onPress={() => handleDelete(record.dayNumber)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Text style={styles.deleteBtn}>{t.delete}</Text>
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.dayDate}>{record.date}</Text>
+              <TouchableOpacity
+                onPress={() =>
+                  handleDelete(record.dayNumber, record.goalName)
+                }
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.deleteBtn}>{t.delete}</Text>
+              </TouchableOpacity>
             </View>
 
             <Text style={styles.dayRoute}>
@@ -213,7 +170,6 @@ export default function HistoryScreen() {
                 <Text style={styles.dayStatValue}>
                   {formatTime(record.ridingMinutes)}
                 </Text>
-                <Text style={styles.dayStatUnit}></Text>
               </View>
             </View>
 
@@ -280,18 +236,6 @@ const styles = StyleSheet.create({
     color: CyclingColors.textPrimary,
     marginBottom: 12,
   },
-  progressBarBg: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: CyclingColors.primaryLight,
-    overflow: 'hidden',
-    marginBottom: 16,
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 4,
-    backgroundColor: CyclingColors.primary,
-  },
   progressStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -341,24 +285,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 6,
   },
-  dayHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  dayBadge: {
-    backgroundColor: CyclingColors.primaryLight,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  dayBadgeText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: CyclingColors.primary,
-  },
   dayDate: {
-    fontSize: 12,
+    fontSize: 13,
+    fontWeight: '600',
     color: CyclingColors.textSecondary,
   },
   deleteBtn: {

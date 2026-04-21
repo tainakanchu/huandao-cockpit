@@ -34,7 +34,6 @@ import type { RiskSummary, BikeHotel } from '@/lib/types';
 export default function TodayScreen() {
   const dayPlan = usePlanStore((s) => s.dayPlan);
   const selectedGoal = usePlanStore((s) => s.selectedGoal);
-  const dayNumber = usePlanStore((s) => s.dayNumber);
   const sunTimes = usePlanStore((s) => s.sunTimes);
   const difficultyLevel = usePlanStore((s) => s.difficultyLevel);
   const riskSummary = usePlanStore((s) => s.riskSummary);
@@ -136,7 +135,6 @@ export default function TodayScreen() {
       >
         {/* A. Day Header */}
         <DayHeader
-          dayNumber={dayNumber}
           startName={startName}
           endName={endName}
           difficultyLevel={difficultyLevel}

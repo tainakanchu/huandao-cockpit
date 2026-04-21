@@ -15,7 +15,6 @@ import { usePlanStore } from '@/lib/store/planStore';
 import { useRideStore } from '@/lib/store/rideStore';
 import { useTripStore } from '@/lib/store/tripStore';
 import { getGoalCandidates } from '@/lib/data/goals';
-import TripProgress from '@/components/summary/TripProgress';
 import CumulativeStats from '@/components/summary/CumulativeStats';
 
 export default function SummaryScreen() {
@@ -26,7 +25,6 @@ export default function SummaryScreen() {
   const endRide = useRideStore((s) => s.endRide);
   const status = useRideStore((s) => s.status);
 
-  const tripPlan = useTripStore((s) => s.tripPlan);
   const dayHistory = useTripStore((s) => s.dayHistory);
 
   // Androidバックボタン無効化
@@ -35,14 +33,11 @@ export default function SummaryScreen() {
     return () => sub.remove();
   }, []);
 
-  // Derive next day info from trip plan
-  const nextDaySlot = tripPlan?.find((s) => s.dayNumber === dayNumber + 1);
   const progress = useTripStore.getState().getTotalProgress();
 
   const handleReturnHome = () => {
-    // Record the completed day in tripStore before advancing
+    // Record the completed ride
     if (dayPlan && selectedGoal) {
-      // Find start location name from goals data
       const allGoals = getGoalCandidates();
       const startGoal = allGoals
         .filter((g) => g.kmFromStart <= dayPlan.startKm)
@@ -52,6 +47,8 @@ export default function SummaryScreen() {
       useTripStore.getState().completeDayRecord({
         dayNumber,
         startName,
+        startKm: dayPlan.startKm,
+        endKm: dayPlan.endKm,
         goalId: selectedGoal.id,
         goalName: selectedGoal.nameZh || selectedGoal.name,
         distanceKm: dayPlan.distanceKm,
@@ -75,11 +72,6 @@ export default function SummaryScreen() {
     return `${h}h${m.toString().padStart(2, '0')}m`;
   };
 
-  // Build next button label
-  const nextButtonLabel = nextDaySlot
-    ? `次の日: ${nextDaySlot.goalNameZh || nextDaySlot.goalName} (${nextDaySlot.distanceKm.toFixed(0)}km)`
-    : '次の日へ進む';
-
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScrollView
@@ -92,8 +84,7 @@ export default function SummaryScreen() {
           <View style={styles.iconContainer}>
             <Text style={styles.icon}>🏁</Text>
           </View>
-          <Text style={styles.title}>デイサマリー</Text>
-          <Text style={styles.subtitle}>第 {dayNumber} 日 完了</Text>
+          <Text style={styles.title}>到着</Text>
         </View>
 
         {/* Today's completion card */}
@@ -129,31 +120,6 @@ export default function SummaryScreen() {
               </View>
             </View>
 
-            {/* Day breakdown: actual vs planned */}
-            {nextDaySlot != null && (
-              <View style={styles.breakdownSection}>
-                <Text style={styles.breakdownTitle}>Day {dayNumber} 内訳</Text>
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>計画距離</Text>
-                  <Text style={styles.breakdownValue}>
-                    {dayPlan.distanceKm.toFixed(1)} km
-                  </Text>
-                </View>
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>計画標高</Text>
-                  <Text style={styles.breakdownValue}>
-                    {dayPlan.elevationGainM} m
-                  </Text>
-                </View>
-                <View style={styles.breakdownRow}>
-                  <Text style={styles.breakdownLabel}>実走行時間</Text>
-                  <Text style={styles.breakdownValue}>
-                    {formatTime(status.elapsedMinutes)}
-                  </Text>
-                </View>
-              </View>
-            )}
-
             {/* Notes from the ride */}
             {status.notes.length > 0 && (
               <View style={styles.notesSection}>
@@ -169,15 +135,8 @@ export default function SummaryScreen() {
           </View>
         )}
 
-        {/* Trip progress timeline */}
-        <TripProgress tripPlan={tripPlan} currentDayNumber={dayNumber} />
-
         {/* Cumulative stats */}
-        <CumulativeStats
-          dayHistory={dayHistory}
-          totalKm={progress.totalKm}
-          totalDays={progress.totalDays}
-        />
+        <CumulativeStats dayHistory={dayHistory} progress={progress} />
 
         {/* Spacer for bottom button */}
         <View style={styles.bottomSpacer} />
@@ -189,11 +148,11 @@ export default function SummaryScreen() {
           style={styles.homeButton}
           onPress={() => {
             Alert.alert(
-              `第 ${dayNumber} 日を完了`,
-              '記録を保存して次の日に進みますか？',
+              'ライドを完了',
+              '記録を保存してホームに戻りますか？',
               [
                 { text: 'キャンセル', style: 'cancel' },
-                { text: '完了して進む', onPress: handleReturnHome },
+                { text: '完了する', onPress: handleReturnHome },
               ],
             );
           }}
@@ -205,7 +164,7 @@ export default function SummaryScreen() {
             numberOfLines={1}
             adjustsFontSizeToFit
           >
-            {nextButtonLabel}
+            ホームに戻る
           </Text>
         </TouchableOpacity>
       </View>

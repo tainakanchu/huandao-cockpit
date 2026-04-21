@@ -1,27 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Rect } from 'react-native-svg';
 import { CyclingColors } from '@/constants/Colors';
-
-type DayRecord = {
-  dayNumber: number;
-  goalId: string;
-  goalName: string;
-  distanceKm: number;
-  elevationGainM: number;
-  ridingMinutes: number;
-  date: string;
-  notes: string[];
-};
+import type { DayRecord, TotalProgress } from '@/lib/store/tripStore';
 
 type Props = {
   dayHistory: DayRecord[];
-  totalKm: number;
-  totalDays: number;
+  progress: TotalProgress;
 };
-
-const PROGRESS_BAR_WIDTH = 280;
-const PROGRESS_BAR_HEIGHT = 12;
 
 function formatDuration(totalMinutes: number): string {
   const hours = Math.floor(totalMinutes / 60);
@@ -30,111 +15,50 @@ function formatDuration(totalMinutes: number): string {
   return `${hours}h${mins.toString().padStart(2, '0')}m`;
 }
 
-export default function CumulativeStats({
-  dayHistory,
-  totalKm,
-  totalDays,
-}: Props) {
-  const completedKm = dayHistory.reduce((sum, d) => sum + d.distanceKm, 0);
-  const completedDays = dayHistory.length;
-  const totalRidingMinutes = dayHistory.reduce(
-    (sum, d) => sum + d.ridingMinutes,
-    0
-  );
-  const totalElevation = dayHistory.reduce(
-    (sum, d) => sum + d.elevationGainM,
-    0
-  );
-  const avgDailyDistance =
-    completedDays > 0 ? completedKm / completedDays : 0;
-
-  const kmProgress = totalKm > 0 ? Math.min(completedKm / totalKm, 1) : 0;
-  const kmProgressPercent = Math.round(kmProgress * 100);
+export default function CumulativeStats({ dayHistory, progress }: Props) {
+  const avgDistance =
+    progress.completedRides > 0
+      ? progress.completedKm / progress.completedRides
+      : 0;
 
   const metrics = [
     {
       icon: '🚴',
-      label: '走行距離',
-      value: `${completedKm.toFixed(1)}`,
+      label: '累計距離',
+      value: `${progress.completedKm.toFixed(1)}`,
       unit: 'km',
-      sub: `/ ${totalKm.toFixed(0)} km`,
     },
     {
       icon: '📅',
-      label: '完了日数',
-      value: `${completedDays}`,
-      unit: '日',
-      sub: `/ ${totalDays} 日`,
+      label: 'ライド回数',
+      value: `${progress.completedRides}`,
+      unit: '回',
     },
     {
       icon: '📊',
-      label: '平均日距離',
-      value: `${avgDailyDistance.toFixed(1)}`,
-      unit: 'km/日',
-      sub: '',
+      label: '平均距離',
+      value: `${avgDistance.toFixed(1)}`,
+      unit: 'km',
     },
     {
       icon: '⏱️',
       label: '総走行時間',
-      value: formatDuration(totalRidingMinutes),
+      value: formatDuration(progress.totalRidingMinutes),
       unit: '',
-      sub: '',
     },
     {
       icon: '⛰️',
       label: '総獲得標高',
-      value: `${totalElevation.toLocaleString()}`,
+      value: `${progress.totalElevationM.toLocaleString()}`,
       unit: 'm',
-      sub: '',
     },
   ];
+
+  if (dayHistory.length === 0) return null;
 
   return (
     <View style={styles.card}>
       <Text style={styles.cardTitle}>累計スタッツ</Text>
-
-      {/* Distance progress bar */}
-      <View style={styles.progressSection}>
-        <View style={styles.progressHeader}>
-          <Text style={styles.progressText}>
-            {completedKm.toFixed(1)} / {totalKm.toFixed(0)} km
-          </Text>
-          <Text style={styles.progressPercent}>{kmProgressPercent}%</Text>
-        </View>
-        <View style={styles.progressBarContainer}>
-          <Svg
-            width="100%"
-            height={PROGRESS_BAR_HEIGHT}
-            viewBox={`0 0 ${PROGRESS_BAR_WIDTH} ${PROGRESS_BAR_HEIGHT}`}
-            preserveAspectRatio="none"
-          >
-            {/* Background */}
-            <Rect
-              x={0}
-              y={0}
-              width={PROGRESS_BAR_WIDTH}
-              height={PROGRESS_BAR_HEIGHT}
-              fill={CyclingColors.divider}
-              rx={PROGRESS_BAR_HEIGHT / 2}
-              ry={PROGRESS_BAR_HEIGHT / 2}
-            />
-            {/* Filled */}
-            {kmProgress > 0 && (
-              <Rect
-                x={0}
-                y={0}
-                width={PROGRESS_BAR_WIDTH * kmProgress}
-                height={PROGRESS_BAR_HEIGHT}
-                fill={CyclingColors.success}
-                rx={PROGRESS_BAR_HEIGHT / 2}
-                ry={PROGRESS_BAR_HEIGHT / 2}
-              />
-            )}
-          </Svg>
-        </View>
-      </View>
-
-      {/* Metrics grid */}
       <View style={styles.grid}>
         {metrics.map((m, idx) => (
           <View key={idx} style={styles.metricItem}>
@@ -146,7 +70,6 @@ export default function CumulativeStats({
                 <Text style={styles.metricUnit}>{m.unit}</Text>
               )}
             </View>
-            {m.sub !== '' && <Text style={styles.metricSub}>{m.sub}</Text>}
           </View>
         ))}
       </View>
@@ -173,34 +96,9 @@ const styles = StyleSheet.create({
     color: CyclingColors.textPrimary,
     marginBottom: 12,
   },
-  progressSection: {
-    marginBottom: 16,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  progressText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: CyclingColors.textSecondary,
-  },
-  progressPercent: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: CyclingColors.success,
-  },
-  progressBarContainer: {
-    width: '100%',
-  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    borderTopWidth: 1,
-    borderTopColor: CyclingColors.divider,
-    paddingTop: 12,
   },
   metricItem: {
     width: '33.33%',
@@ -230,10 +128,5 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: CyclingColors.textSecondary,
-  },
-  metricSub: {
-    fontSize: 10,
-    color: CyclingColors.textLight,
-    marginTop: 1,
   },
 });

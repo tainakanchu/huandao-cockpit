@@ -5,14 +5,12 @@ import DifficultyBadge from '@/components/common/DifficultyBadge';
 import type { DifficultyLevel } from '@/lib/types';
 
 type Props = {
-  dayNumber: number;
   startName: string;
   endName: string;
   difficultyLevel: DifficultyLevel;
 };
 
 export default function DayHeader({
-  dayNumber,
   startName,
   endName,
   difficultyLevel,
@@ -20,10 +18,7 @@ export default function DayHeader({
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
-        <View style={styles.dayBadge}>
-          <Text style={styles.dayLabel}>DAY</Text>
-          <Text style={styles.dayNumber}>{dayNumber}</Text>
-        </View>
+        <Text style={styles.title}>ライド</Text>
         <DifficultyBadge level={difficultyLevel} />
       </View>
 
@@ -48,21 +43,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
-  dayBadge: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 4,
-  },
-  dayLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: CyclingColors.primaryLight,
-    letterSpacing: 1,
-  },
-  dayNumber: {
-    fontSize: 32,
-    fontWeight: '800',
+  title: {
+    fontSize: 18,
+    fontWeight: '700',
     color: CyclingColors.white,
+    letterSpacing: 0.5,
   },
   route: {
     fontSize: 18,
