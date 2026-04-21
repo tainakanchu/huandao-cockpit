@@ -116,15 +116,17 @@ export default function OsmSearchModal({
         return;
       }
 
-      // Snap and compute detour distance for metadata only.
+      // POI の実座標をそのまま保持する。ルート上の一番近い km を算出して
+      // 日程ソートや「何 km 地点の立ち寄り」表示に使う。ルート外にあるなら
+      // 地図上でもルート外に正直に描画される。
       const snapped = snapToRoute(r.lat, r.lng, routeCoords, cumKm);
       const category = deriveCategory(r);
 
       const ok = addWaypoint({
         name: r.shortName,
         nameZh: undefined,
-        lat: snapped.lat,
-        lng: snapped.lng,
+        lat: r.lat,
+        lng: r.lng,
         kmFromStart: snapped.km,
         category,
         sourceType: 'custom',
@@ -273,7 +275,8 @@ export default function OsmSearchModal({
         </View>
 
         <Text style={styles.hint}>
-          名前や地名で検索できます。結果はルート上にスナップされます。
+          名前や地名で検索できます。ルートから離れた場所はそのまま地図に表示され、
+          立ち寄り順は最寄りのルート km で並びます。
         </Text>
 
         {noticeNode}

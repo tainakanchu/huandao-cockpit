@@ -9,12 +9,13 @@
 
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
+import Svg, { Path, Circle, G, Line, Text as SvgText } from 'react-native-svg';
 import { CyclingColors } from '@/constants/Colors';
 import {
   getRouteCoordinates,
   getCoordinateAtKm,
 } from '@/lib/data/route';
+import { haversineDistance } from '@/lib/geo/distance';
 import { useWaypointStore } from '@/lib/store/waypointStore';
 import type { WaypointCategory } from '@/lib/types';
 import taiwanOutlineData from '@/assets/data/taiwan-outline.json';
@@ -127,18 +128,22 @@ export default function RouteMap({
     );
   }, [waypoints, mode, highlightStartKm, highlightEndKm]);
 
-  // Compute bounds to fit
+  // Compute bounds to fit. In day mode, include in-range waypoints too so
+  // off-route POIs don't get clipped.
   const view = useMemo(() => {
     let basePts: Array<{ lat: number; lng: number }>;
     if (mode === 'day' && highlightCoords && highlightCoords.length > 0) {
       basePts = highlightCoords.map(([lng, lat]) => ({ lat, lng }));
+      for (const w of waypointsInRange) {
+        basePts.push({ lat: w.lat, lng: w.lng });
+      }
     } else {
       basePts = coords.map(([lng, lat]) => ({ lat, lng }));
     }
     const raw = boundsOfPoints(basePts);
     const padded = padBounds(raw, 0.08);
     return padded;
-  }, [mode, highlightCoords, coords]);
+  }, [mode, highlightCoords, coords, waypointsInRange]);
 
   // Canvas & projection
   const width = 360; // virtual width; scales via SVG viewBox
@@ -265,22 +270,47 @@ export default function RouteMap({
             />
           )}
 
-          {/* Waypoints with labels */}
+          {/* Waypoints: 実座標に描画。ルートから離れている場合は最寄り km 地点へ点線で接続 */}
           <G>
             {waypointsInRange.map((w) => {
               const [x, y] = project(w.lng, w.lat);
               const color = WAYPOINT_COLOR[w.category] ?? CyclingColors.primary;
               const label = w.nameZh ?? w.name;
-              // Place labels to the right of the dot by default; if too close
-              // to the right edge, flip to the left so it doesn't clip.
               const onRight = x < canvasW * 0.7;
+
+              // Detour コネクタ: ルート上の最寄り km 地点から waypoint までを点線で
+              const snapPoint = getCoordinateAtKm(w.kmFromStart);
+              const detourKm = snapPoint
+                ? haversineDistance(w.lat, w.lng, snapPoint.lat, snapPoint.lng)
+                : 0;
+              const showConnector = snapPoint !== null && detourKm > 0.3;
+              const [sx, sy] = snapPoint
+                ? project(snapPoint.lng, snapPoint.lat)
+                : [x, y];
+
               return (
                 <G key={w.id}>
+                  {showConnector && (
+                    <Line
+                      x1={sx}
+                      y1={sy}
+                      x2={x}
+                      y2={y}
+                      stroke={color}
+                      strokeWidth={1.2}
+                      strokeDasharray="3,2"
+                      strokeOpacity={0.7}
+                    />
+                  )}
                   <Circle cx={x} cy={y} r={6} fill={color} stroke="white" strokeWidth={1.5} />
                   <LabelWithHalo
                     x={onRight ? x + 9 : x - 9}
                     y={y + 3}
-                    text={label}
+                    text={
+                      detourKm > 1
+                        ? `${label} (−${detourKm.toFixed(1)}km)`
+                        : label
+                    }
                     anchor={onRight ? 'start' : 'end'}
                     fontSize={9}
                   />
