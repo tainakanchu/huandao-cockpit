@@ -4,7 +4,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Alert,
+  Modal,
 } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
 import { useWaypointStore, WAYPOINT_LIMIT } from '@/lib/store/waypointStore';
@@ -33,6 +33,7 @@ const CATEGORY_META: Record<
  */
 export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
   const [pickerVisible, setPickerVisible] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState<Waypoint | null>(null);
   const waypoints = useWaypointStore((s) => s.waypoints);
   const removeWaypoint = useWaypointStore((s) => s.removeWaypoint);
 
@@ -45,20 +46,11 @@ export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
     [waypoints, dayStartKm, dayEndKm],
   );
 
-  const handleRemove = (wp: Waypoint) => {
-    Alert.alert(
-      wp.nameZh ?? wp.name,
-      '経由地から外しますか？',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: '外す',
-          style: 'destructive',
-          onPress: () => removeWaypoint(wp.id),
-        },
-      ],
-      { cancelable: true },
-    );
+  const handleConfirmRemove = () => {
+    if (confirmRemove) {
+      removeWaypoint(confirmRemove.id);
+    }
+    setConfirmRemove(null);
   };
 
   return (
@@ -83,12 +75,7 @@ export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
               CATEGORY_META[wp.category] ?? CATEGORY_META.custom;
             const offsetKm = wp.kmFromStart - dayStartKm;
             return (
-              <TouchableOpacity
-                key={wp.id}
-                style={styles.row}
-                onPress={() => handleRemove(wp)}
-                activeOpacity={0.7}
-              >
+              <View key={wp.id} style={styles.row}>
                 <View
                   style={[
                     styles.rowIcon,
@@ -106,8 +93,15 @@ export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
                     {Math.round(wp.kmFromStart)})
                   </Text>
                 </View>
-                <Text style={styles.removeHint}>✕</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.removeBtn}
+                  onPress={() => setConfirmRemove(wp)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  activeOpacity={0.6}
+                >
+                  <Text style={styles.removeBtnText}>✕</Text>
+                </TouchableOpacity>
+              </View>
             );
           })}
         </View>
@@ -127,6 +121,43 @@ export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
         dayStartKm={dayStartKm}
         dayEndKm={dayEndKm}
       />
+
+      {/* Custom confirm dialog (replaces Alert.alert which can't reliably fire
+          onPress on react-native-web) */}
+      <Modal
+        visible={confirmRemove !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirmRemove(null)}
+      >
+        <View style={styles.confirmBackdrop}>
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>立ち寄りから外しますか？</Text>
+            {confirmRemove && (
+              <Text style={styles.confirmBody}>
+                {confirmRemove.nameZh ?? confirmRemove.name} (KP{' '}
+                {Math.round(confirmRemove.kmFromStart)}km)
+              </Text>
+            )}
+            <View style={styles.confirmActions}>
+              <TouchableOpacity
+                style={[styles.confirmBtn, styles.confirmBtnCancel]}
+                onPress={() => setConfirmRemove(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.confirmBtnCancelText}>キャンセル</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmBtn, styles.confirmBtnRemove]}
+                onPress={handleConfirmRemove}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.confirmBtnRemoveText}>外す</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -210,11 +241,20 @@ const styles = StyleSheet.create({
     color: CyclingColors.textSecondary,
     marginTop: 2,
   },
-  removeHint: {
+  removeBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: CyclingColors.card,
+    borderWidth: 1,
+    borderColor: CyclingColors.cardBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  removeBtnText: {
     fontSize: 14,
-    color: CyclingColors.textLight,
     fontWeight: '700',
-    paddingHorizontal: 6,
+    color: CyclingColors.textSecondary,
   },
   addButton: {
     paddingVertical: 10,
@@ -224,6 +264,61 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     fontSize: 13,
+    fontWeight: '700',
+    color: CyclingColors.white,
+  },
+
+  // Confirm dialog
+  confirmBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: CyclingColors.card,
+    borderRadius: 16,
+    padding: 20,
+  },
+  confirmTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: CyclingColors.textPrimary,
+    marginBottom: 6,
+  },
+  confirmBody: {
+    fontSize: 13,
+    color: CyclingColors.textSecondary,
+    marginBottom: 16,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  confirmBtnCancel: {
+    backgroundColor: CyclingColors.background,
+    borderWidth: 1,
+    borderColor: CyclingColors.cardBorder,
+  },
+  confirmBtnCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: CyclingColors.textSecondary,
+  },
+  confirmBtnRemove: {
+    backgroundColor: CyclingColors.critical,
+  },
+  confirmBtnRemoveText: {
+    fontSize: 14,
     fontWeight: '700',
     color: CyclingColors.white,
   },

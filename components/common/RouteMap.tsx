@@ -9,7 +9,7 @@
 
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Svg, { Path, Circle, G } from 'react-native-svg';
+import Svg, { Path, Circle, G, Text as SvgText } from 'react-native-svg';
 import { CyclingColors } from '@/constants/Colors';
 import {
   getRouteCoordinates,
@@ -250,39 +250,70 @@ export default function RouteMap({
             />
           )}
 
-          {/* Waypoints */}
+          {/* Waypoints with labels */}
           <G>
             {waypointsInRange.map((w) => {
               const [x, y] = project(w.lng, w.lat);
               const color = WAYPOINT_COLOR[w.category] ?? CyclingColors.primary;
+              const label = w.nameZh ?? w.name;
+              // Place labels to the right of the dot by default; if too close
+              // to the right edge, flip to the left so it doesn't clip.
+              const onRight = x < canvasW * 0.7;
               return (
                 <G key={w.id}>
                   <Circle cx={x} cy={y} r={6} fill={color} stroke="white" strokeWidth={1.5} />
+                  <LabelWithHalo
+                    x={onRight ? x + 9 : x - 9}
+                    y={y + 3}
+                    text={label}
+                    anchor={onRight ? 'start' : 'end'}
+                    fontSize={9}
+                  />
                 </G>
               );
             })}
           </G>
 
-          {/* Start / end markers for day mode */}
+          {/* Start / end markers for day mode (with labels) */}
           {startMarker && (
-            <Circle
-              cx={startMarker.x}
-              cy={startMarker.y}
-              r={5}
-              fill={CyclingColors.textPrimary}
-              stroke="white"
-              strokeWidth={1.5}
-            />
+            <G>
+              <Circle
+                cx={startMarker.x}
+                cy={startMarker.y}
+                r={5}
+                fill={CyclingColors.textPrimary}
+                stroke="white"
+                strokeWidth={1.5}
+              />
+              <LabelWithHalo
+                x={startMarker.x < canvasW * 0.7 ? startMarker.x + 8 : startMarker.x - 8}
+                y={startMarker.y + 3}
+                text="スタート"
+                anchor={startMarker.x < canvasW * 0.7 ? 'start' : 'end'}
+                fontSize={9}
+                color={CyclingColors.textPrimary}
+              />
+            </G>
           )}
           {endMarker && (
-            <Circle
-              cx={endMarker.x}
-              cy={endMarker.y}
-              r={7}
-              fill={CyclingColors.accent}
-              stroke="white"
-              strokeWidth={2}
-            />
+            <G>
+              <Circle
+                cx={endMarker.x}
+                cy={endMarker.y}
+                r={7}
+                fill={CyclingColors.accent}
+                stroke="white"
+                strokeWidth={2}
+              />
+              <LabelWithHalo
+                x={endMarker.x < canvasW * 0.7 ? endMarker.x + 10 : endMarker.x - 10}
+                y={endMarker.y + 3}
+                text="ゴール"
+                anchor={endMarker.x < canvasW * 0.7 ? 'start' : 'end'}
+                fontSize={10}
+                color={CyclingColors.accent}
+              />
+            </G>
           )}
 
           {/* Current position */}
@@ -314,6 +345,55 @@ export default function RouteMap({
         </Text>
       )}
     </View>
+  );
+}
+
+/**
+ * Draw text with a white halo outline so it remains readable over any map
+ * background. React-native-svg renders the two Text elements in order, so the
+ * halo sits under the main fill.
+ */
+function LabelWithHalo({
+  x,
+  y,
+  text,
+  anchor,
+  fontSize,
+  color,
+}: {
+  x: number;
+  y: number;
+  text: string;
+  anchor: 'start' | 'middle' | 'end';
+  fontSize: number;
+  color?: string;
+}) {
+  const fill = color ?? CyclingColors.textPrimary;
+  return (
+    <G>
+      <SvgText
+        x={x}
+        y={y}
+        fontSize={fontSize}
+        fontWeight="700"
+        textAnchor={anchor}
+        fill="white"
+        stroke="white"
+        strokeWidth={3}
+      >
+        {text}
+      </SvgText>
+      <SvgText
+        x={x}
+        y={y}
+        fontSize={fontSize}
+        fontWeight="700"
+        textAnchor={anchor}
+        fill={fill}
+      >
+        {text}
+      </SvgText>
+    </G>
   );
 }
 
