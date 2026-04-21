@@ -16,7 +16,17 @@ export const useI18nStore = create<I18nState>()(
   persist(
     (set) => ({
       locale: 'ja',
-      setLocale: (locale) => set({ locale }),
+      setLocale: (locale) => {
+        set({ locale });
+        // Lazy-import to avoid circular dep (planStore imports from i18n).
+        // When locale changes and a plan is active, regenerate so advisory /
+        // supply reasons are in the new language.
+        import('@/lib/store/planStore').then(({ usePlanStore }) => {
+          if (usePlanStore.getState().selectedGoal) {
+            usePlanStore.getState().refreshWeather().catch(() => {});
+          }
+        });
+      },
     }),
     {
       name: 'huandao-i18n',

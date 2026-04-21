@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 
 type Props = {
   onSelect: (km: number) => void;
@@ -10,9 +11,10 @@ type Props = {
 const distances = [60, 80, 100, 120];
 
 export default function DistanceQuickPick({ onSelect, activeDistance }: Props) {
+  const t = useT();
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>目標距離</Text>
+      <Text style={styles.label}>{t.targetDistance}</Text>
       <View style={styles.row}>
         {distances.map((km) => {
           const isActive = activeDistance === km;

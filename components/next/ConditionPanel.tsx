@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 
 type Props = {
   eta: Date | null;
@@ -19,24 +20,26 @@ function formatTime(date: Date | null): string {
 
 function getDelayText(
   eta: Date | null,
-  plannedEta: Date | null
+  plannedEta: Date | null,
+  minFmt: (n: number) => string,
 ): { text: string; color: string } {
   if (!eta || !plannedEta) return { text: '--', color: CyclingColors.textSecondary };
   const delayMin = Math.round(
     (eta.getTime() - plannedEta.getTime()) / (1000 * 60)
   );
   if (delayMin <= 0) {
-    return { text: `${delayMin}分`, color: CyclingColors.success };
+    return { text: minFmt(delayMin), color: CyclingColors.success };
   }
   if (delayMin <= 30) {
-    return { text: `+${delayMin}分`, color: CyclingColors.accent };
+    return { text: `+${minFmt(delayMin)}`, color: CyclingColors.accent };
   }
-  return { text: `+${delayMin}分`, color: CyclingColors.critical };
+  return { text: `+${minFmt(delayMin)}`, color: CyclingColors.critical };
 }
 
 function getSunsetMargin(
   eta: Date | null,
-  sunset: Date | null
+  sunset: Date | null,
+  minFmt: (n: number) => string,
 ): { text: string; color: string } {
   if (!eta || !sunset) return { text: '--', color: CyclingColors.textSecondary };
   const marginMin = Math.round(
@@ -51,9 +54,9 @@ function getSunsetMargin(
     };
   }
   if (marginMin >= 0) {
-    return { text: `+${marginMin}分`, color: CyclingColors.accent };
+    return { text: `+${minFmt(marginMin)}`, color: CyclingColors.accent };
   }
-  return { text: `${marginMin}分`, color: CyclingColors.critical };
+  return { text: minFmt(marginMin), color: CyclingColors.critical };
 }
 
 function getWindDirectionArrow(deg?: number): string {
@@ -71,31 +74,32 @@ export default function ConditionPanel({
   windDirection,
   windSpeed,
 }: Props) {
-  const delay = getDelayText(eta, plannedEta);
-  const sunset = getSunsetMargin(eta, sunsetTime);
+  const t = useT();
+  const delay = getDelayText(eta, plannedEta, t.minuteSuffix);
+  const sunset = getSunsetMargin(eta, sunsetTime, t.minuteSuffix);
 
   const items = [
     {
       icon: '🏁',
-      label: 'ETA',
+      label: t.conditionEta,
       value: formatTime(eta),
       color: CyclingColors.textPrimary,
     },
     {
       icon: '⏱️',
-      label: '遅延',
+      label: t.conditionDelay,
       value: delay.text,
       color: delay.color,
     },
     {
       icon: '🌅',
-      label: '日没余裕',
+      label: t.conditionSunsetMargin,
       value: sunset.text,
       color: sunset.color,
     },
     {
       icon: '💨',
-      label: '風',
+      label: t.conditionWind,
       value:
         windSpeed !== undefined
           ? `${getWindDirectionArrow(windDirection)} ${windSpeed}km/h`

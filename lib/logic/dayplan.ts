@@ -12,6 +12,7 @@ import type {
 import { generateAdvisoryCards } from "@/lib/logic/advisory";
 import { generateSupplyPlan } from "@/lib/logic/supply";
 import { getGoalCandidates } from "@/lib/data/goals";
+import type { Locale } from "@/lib/i18n";
 
 /**
  * Generate a DayPlan from a start position to a selected goal.
@@ -33,7 +34,8 @@ export function generateDayPlan(
   goal: GoalCandidate,
   allCheckpoints: Checkpoint[],
   allHazards: Hazard[],
-  elevationProfile: ElevationPoint[]
+  elevationProfile: ElevationPoint[],
+  locale: Locale = 'ja',
 ): DayPlan {
   const endKm = goal.kmFromStart;
   const distanceKm = endKm - startKm;
@@ -53,7 +55,11 @@ export function generateDayPlan(
 
   // Generate supply plan (pass goals for town-aware meal recommendations)
   const supplyPlan = generateSupplyPlan(
-    allCheckpoints, startKm, endKm, getGoalCandidates()
+    allCheckpoints,
+    startKm,
+    endKm,
+    getGoalCandidates(),
+    locale,
   );
 
   // Build the plan (without advisory cards first, since they need the plan)
@@ -71,7 +77,7 @@ export function generateDayPlan(
   };
 
   // Generate advisory cards based on the plan
-  plan.advisoryCards = generateAdvisoryCards(plan);
+  plan.advisoryCards = generateAdvisoryCards(plan, locale);
 
   return plan;
 }

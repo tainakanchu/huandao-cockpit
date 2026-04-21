@@ -9,6 +9,7 @@ import {
 import { CyclingColors } from '@/constants/Colors';
 import { useWaypointStore, WAYPOINT_LIMIT } from '@/lib/store/waypointStore';
 import WaypointPicker from '@/components/plan/WaypointPicker';
+import { useT } from '@/lib/i18n';
 import type { Waypoint, WaypointCategory } from '@/lib/types';
 
 type Props = {
@@ -32,6 +33,7 @@ const CATEGORY_META: Record<
  * plus an "add" button that opens WaypointPicker scoped to the day.
  */
 export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
+  const t = useT();
   const [pickerVisible, setPickerVisible] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<Waypoint | null>(null);
   const waypoints = useWaypointStore((s) => s.waypoints);
@@ -56,17 +58,19 @@ export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
   return (
     <View style={styles.section}>
       <View style={styles.header}>
-        <Text style={styles.title}>🛣️ 今日の立ち寄り</Text>
+        <Text style={styles.title}>{t.todayStopsTitle}</Text>
         <Text style={styles.count}>
-          {dayWaypoints.length} 箇所 ・ 全体 {waypoints.length}/{WAYPOINT_LIMIT}
+          {t.todayStopsSubtitle(
+            dayWaypoints.length,
+            waypoints.length,
+            WAYPOINT_LIMIT,
+          )}
         </Text>
       </View>
 
       {dayWaypoints.length === 0 ? (
         <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>
-            今日の区間に立ち寄りはありません
-          </Text>
+          <Text style={styles.emptyText}>{t.noStopsInRange}</Text>
         </View>
       ) : (
         <View style={styles.list}>
@@ -89,8 +93,10 @@ export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
                     {wp.nameZh ?? wp.name}
                   </Text>
                   <Text style={styles.rowKm}>
-                    スタートから +{Math.round(offsetKm)}km (KP{' '}
-                    {Math.round(wp.kmFromStart)})
+                    {t.stopOffsetFromStart(
+                      Math.round(offsetKm),
+                      Math.round(wp.kmFromStart),
+                    )}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -112,7 +118,7 @@ export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
         onPress={() => setPickerVisible(true)}
         activeOpacity={0.7}
       >
-        <Text style={styles.addButtonText}>+ 立ち寄りを追加</Text>
+        <Text style={styles.addButtonText}>{t.addStopButton}</Text>
       </TouchableOpacity>
 
       <WaypointPicker
@@ -132,7 +138,7 @@ export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
       >
         <View style={styles.confirmBackdrop}>
           <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>立ち寄りから外しますか？</Text>
+            <Text style={styles.confirmTitle}>{t.removeStopTitle}</Text>
             {confirmRemove && (
               <Text style={styles.confirmBody}>
                 {confirmRemove.nameZh ?? confirmRemove.name} (KP{' '}
@@ -145,14 +151,14 @@ export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
                 onPress={() => setConfirmRemove(null)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.confirmBtnCancelText}>キャンセル</Text>
+                <Text style={styles.confirmBtnCancelText}>{t.cancel}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.confirmBtn, styles.confirmBtnRemove]}
                 onPress={handleConfirmRemove}
                 activeOpacity={0.7}
               >
-                <Text style={styles.confirmBtnRemoveText}>外す</Text>
+                <Text style={styles.confirmBtnRemoveText}>{t.removeStopButton}</Text>
               </TouchableOpacity>
             </View>
           </View>

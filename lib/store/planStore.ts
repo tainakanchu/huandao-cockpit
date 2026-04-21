@@ -15,6 +15,7 @@ import type {
 import { fetchRouteWeather } from '@/lib/api/weather';
 import { generateDayPlan } from '@/lib/logic/dayplan';
 import { generateAdvisoryCards } from '@/lib/logic/advisory';
+import { useI18nStore } from '@/lib/i18n';
 import { getCheckpointsInRange } from '@/lib/data/checkpoints';
 import { getHazardsInRange } from '@/lib/data/hazards';
 import { getRouteElevationProfile } from '@/lib/data/route';
@@ -127,7 +128,8 @@ export const usePlanStore = create<PlanState>()(
         goal,
         checkpoints,
         hazards,
-        elevationProfile
+        elevationProfile,
+        useI18nStore.getState().locale,
       );
 
       // 2. 天気データを取得
@@ -154,7 +156,10 @@ export const usePlanStore = create<PlanState>()(
         // 3. Advisory cards を天気データ付きで再生成
         dayPlan = {
           ...dayPlan,
-          advisoryCards: generateAdvisoryCards(dayPlan),
+          advisoryCards: generateAdvisoryCards(
+            dayPlan,
+            useI18nStore.getState().locale,
+          ),
         };
       } catch (weatherError) {
         console.warn(
@@ -203,7 +208,10 @@ export const usePlanStore = create<PlanState>()(
       // Advisory cards を再生成
       updatedPlan = {
         ...updatedPlan,
-        advisoryCards: generateAdvisoryCards(updatedPlan),
+        advisoryCards: generateAdvisoryCards(
+          updatedPlan,
+          useI18nStore.getState().locale,
+        ),
       };
 
       set({ dayPlan: updatedPlan, isLoading: false });

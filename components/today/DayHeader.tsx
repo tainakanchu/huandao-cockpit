@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
 import DifficultyBadge from '@/components/common/DifficultyBadge';
+import { useT } from '@/lib/i18n';
 import type { DifficultyLevel } from '@/lib/types';
 
 type Props = {
@@ -15,10 +16,11 @@ export default function DayHeader({
   endName,
   difficultyLevel,
 }: Props) {
+  const t = useT();
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
-        <Text style={styles.title}>ライド</Text>
+        <Text style={styles.title}>{t.rideLabel}</Text>
         <DifficultyBadge level={difficultyLevel} />
       </View>
 

@@ -16,8 +16,10 @@ import { useRideStore } from '@/lib/store/rideStore';
 import { useTripStore } from '@/lib/store/tripStore';
 import { getGoalCandidates } from '@/lib/data/goals';
 import CumulativeStats from '@/components/summary/CumulativeStats';
+import { useT } from '@/lib/i18n';
 
 export default function SummaryScreen() {
+  const t = useT();
   const dayPlan = usePlanStore((s) => s.dayPlan);
   const selectedGoal = usePlanStore((s) => s.selectedGoal);
   const dayNumber = usePlanStore((s) => s.dayNumber);
@@ -42,7 +44,7 @@ export default function SummaryScreen() {
       const startGoal = allGoals
         .filter((g) => g.kmFromStart <= dayPlan.startKm)
         .sort((a, b) => b.kmFromStart - a.kmFromStart)[0];
-      const startName = startGoal?.nameZh || '台北';
+      const startName = startGoal?.nameZh || t.startDefaultName;
 
       useTripStore.getState().completeDayRecord({
         dayNumber,
@@ -84,14 +86,14 @@ export default function SummaryScreen() {
           <View style={styles.iconContainer}>
             <Text style={styles.icon}>🏁</Text>
           </View>
-          <Text style={styles.title}>到着</Text>
+          <Text style={styles.title}>{t.arrivedTitle}</Text>
         </View>
 
         {/* Today's completion card */}
         {dayPlan && selectedGoal && (
           <View style={styles.statsCard}>
             <Text style={styles.statsTitle}>
-              📍 {selectedGoal.nameZh} に到着
+              {t.arrivedAt(selectedGoal.nameZh)}
             </Text>
 
             <View style={styles.statsGrid}>
@@ -100,7 +102,7 @@ export default function SummaryScreen() {
                   {dayPlan.distanceKm.toFixed(1)}
                 </Text>
                 <Text style={styles.statUnit}>km</Text>
-                <Text style={styles.statLabel}>走行距離</Text>
+                <Text style={styles.statLabel}>{t.ridingDistance}</Text>
               </View>
 
               <View style={styles.statItem}>
@@ -108,7 +110,7 @@ export default function SummaryScreen() {
                   {dayPlan.elevationGainM}
                 </Text>
                 <Text style={styles.statUnit}>m</Text>
-                <Text style={styles.statLabel}>獲得標高</Text>
+                <Text style={styles.statLabel}>{t.elevation}</Text>
               </View>
 
               <View style={styles.statItem}>
@@ -116,14 +118,14 @@ export default function SummaryScreen() {
                   {formatTime(status.elapsedMinutes)}
                 </Text>
                 <Text style={styles.statUnit}></Text>
-                <Text style={styles.statLabel}>走行時間</Text>
+                <Text style={styles.statLabel}>{t.ridingTime}</Text>
               </View>
             </View>
 
             {/* Notes from the ride */}
             {status.notes.length > 0 && (
               <View style={styles.notesSection}>
-                <Text style={styles.notesTitle}>📝 走行メモ</Text>
+                <Text style={styles.notesTitle}>{t.ridingNotes}</Text>
                 {status.notes.map((note, idx) => (
                   <View key={idx} style={styles.noteRow}>
                     <Text style={styles.noteBullet}>-</Text>
@@ -148,11 +150,11 @@ export default function SummaryScreen() {
           style={styles.homeButton}
           onPress={() => {
             Alert.alert(
-              'ライドを完了',
-              '記録を保存してホームに戻りますか？',
+              t.finishRideTitle,
+              t.finishRideMessage,
               [
-                { text: 'キャンセル', style: 'cancel' },
-                { text: '完了する', onPress: handleReturnHome },
+                { text: t.cancel, style: 'cancel' },
+                { text: t.finishConfirm, onPress: handleReturnHome },
               ],
             );
           }}
@@ -164,7 +166,7 @@ export default function SummaryScreen() {
             numberOfLines={1}
             adjustsFontSizeToFit
           >
-            ホームに戻る
+            {t.backToHome}
           </Text>
         </TouchableOpacity>
       </View>

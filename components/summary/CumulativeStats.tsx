@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 import type { DayRecord, TotalProgress } from '@/lib/store/tripStore';
 
 type Props = {
@@ -16,6 +17,7 @@ function formatDuration(totalMinutes: number): string {
 }
 
 export default function CumulativeStats({ dayHistory, progress }: Props) {
+  const t = useT();
   const avgDistance =
     progress.completedRides > 0
       ? progress.completedKm / progress.completedRides
@@ -24,31 +26,31 @@ export default function CumulativeStats({ dayHistory, progress }: Props) {
   const metrics = [
     {
       icon: '🚴',
-      label: '累計距離',
+      label: t.totalDistance,
       value: `${progress.completedKm.toFixed(1)}`,
       unit: 'km',
     },
     {
       icon: '📅',
-      label: 'ライド回数',
+      label: t.rideCount,
       value: `${progress.completedRides}`,
-      unit: '回',
+      unit: t.rideCountUnit,
     },
     {
       icon: '📊',
-      label: '平均距離',
+      label: t.avgDistance,
       value: `${avgDistance.toFixed(1)}`,
       unit: 'km',
     },
     {
       icon: '⏱️',
-      label: '総走行時間',
+      label: t.totalRidingTime,
       value: formatDuration(progress.totalRidingMinutes),
       unit: '',
     },
     {
       icon: '⛰️',
-      label: '総獲得標高',
+      label: t.totalElevationGain,
       value: `${progress.totalElevationM.toLocaleString()}`,
       unit: 'm',
     },
@@ -58,7 +60,7 @@ export default function CumulativeStats({ dayHistory, progress }: Props) {
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>累計スタッツ</Text>
+      <Text style={styles.cardTitle}>{t.cumulativeStats}</Text>
       <View style={styles.grid}>
         {metrics.map((m, idx) => (
           <View key={idx} style={styles.metricItem}>

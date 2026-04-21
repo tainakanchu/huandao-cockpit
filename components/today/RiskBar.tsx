@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 import type { RiskSummary, RiskLevel } from '@/lib/types';
 
 type Props = {
@@ -10,17 +11,16 @@ type Props = {
 type RiskItem = {
   key: keyof RiskSummary;
   icon: string;
-  label: string;
 };
 
 const riskItems: RiskItem[] = [
-  { key: 'climb', icon: '⛰️', label: '登坂' },
-  { key: 'wind', icon: '💨', label: '風' },
-  { key: 'heat', icon: '🌡️', label: '暑さ' },
-  { key: 'rain', icon: '🌧️', label: '雨' },
-  { key: 'supply', icon: '🏪', label: '補給' },
-  { key: 'traffic', icon: '🚗', label: '交通' },
-  { key: 'sunset', icon: '🌅', label: '日没' },
+  { key: 'climb', icon: '⛰️' },
+  { key: 'wind', icon: '💨' },
+  { key: 'heat', icon: '🌡️' },
+  { key: 'rain', icon: '🌧️' },
+  { key: 'supply', icon: '🏪' },
+  { key: 'traffic', icon: '🚗' },
+  { key: 'sunset', icon: '🌅' },
 ];
 
 function getRiskColor(level: RiskLevel): string {
@@ -38,20 +38,32 @@ function getRiskBg(level: RiskLevel): string {
   }
 }
 
+const labelMap: Record<keyof RiskSummary, keyof ReturnType<typeof useT>> = {
+  climb: 'riskClimb',
+  wind: 'riskWind',
+  heat: 'riskHeat',
+  rain: 'riskRain',
+  supply: 'riskSupply',
+  traffic: 'riskTraffic',
+  sunset: 'riskSunset',
+};
+
 export default function RiskBar({ risks }: Props) {
+  const t = useT();
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>リスク概要</Text>
+      <Text style={styles.sectionTitle}>{t.riskOverview}</Text>
       <View style={styles.bar}>
         {riskItems.map((item) => {
           const level = risks[item.key];
           const color = getRiskColor(level);
           const bg = getRiskBg(level);
+          const label = t[labelMap[item.key]] as string;
 
           return (
             <View key={item.key} style={[styles.item, { backgroundColor: bg }]}>
               <Text style={styles.icon}>{item.icon}</Text>
-              <Text style={styles.label}>{item.label}</Text>
+              <Text style={styles.label}>{label}</Text>
               <View style={[styles.indicator, { backgroundColor: color }]} />
             </View>
           );

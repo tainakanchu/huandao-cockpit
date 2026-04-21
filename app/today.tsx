@@ -30,9 +30,11 @@ import ElevationChart from '@/components/today/ElevationChart';
 import { getRouteElevationProfile } from '@/lib/data/route';
 import { getNearestBikeHotels } from '@/lib/data/bikeHotels';
 import { getHospitalsInRange } from '@/lib/data/guideInfo';
+import { useT } from '@/lib/i18n';
 import type { RiskSummary, BikeHotel } from '@/lib/types';
 
 export default function TodayScreen() {
+  const t = useT();
   const dayPlan = usePlanStore((s) => s.dayPlan);
   const selectedGoal = usePlanStore((s) => s.selectedGoal);
   const sunTimes = usePlanStore((s) => s.sunTimes);
@@ -124,7 +126,7 @@ export default function TodayScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={CyclingColors.primary} />
-        <Text style={styles.loadingText}>プランを準備中...</Text>
+        <Text style={styles.loadingText}>{t.preparingPlan}</Text>
       </View>
     );
   }
@@ -134,16 +136,14 @@ export default function TodayScreen() {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyIcon}>📋</Text>
-        <Text style={styles.emptyTitle}>プランが未選択です</Text>
-        <Text style={styles.emptySubtitle}>
-          ホーム画面でゴールを選択してください
-        </Text>
+        <Text style={styles.emptyTitle}>{t.noPlanSelected}</Text>
+        <Text style={styles.emptySubtitle}>{t.selectGoalPrompt}</Text>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
-          <Text style={styles.backButtonText}>ホームに戻る</Text>
+          <Text style={styles.backButtonText}>{t.backToHome}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -177,7 +177,7 @@ export default function TodayScreen() {
           mode="day"
           highlightStartKm={dayPlan.startKm}
           highlightEndKm={dayPlan.endKm}
-          title="🗺️ 今日のルート"
+          title={t.todayRouteTitle}
         />
 
         {/* B1b. Launch external nav */}
@@ -186,9 +186,7 @@ export default function TodayScreen() {
           onPress={handleOpenGoogleMaps}
           activeOpacity={0.7}
         >
-          <Text style={styles.gmapsButtonText}>
-            🧭 Google Maps でナビを開く
-          </Text>
+          <Text style={styles.gmapsButtonText}>{t.openInGoogleMaps}</Text>
         </TouchableOpacity>
 
         {/* B2. Today's waypoints */}
@@ -220,7 +218,7 @@ export default function TodayScreen() {
           const nearbyHotels = getNearestBikeHotels(dayPlan.endKm, 5);
           return (
             <View style={styles.hotelSection}>
-              <Text style={styles.hotelTitle}>🏨 宿泊を探す</Text>
+              <Text style={styles.hotelTitle}>{t.findHotels}</Text>
               <View style={styles.hotelButtons}>
                 <TouchableOpacity
                   style={[styles.hotelBtn, { backgroundColor: '#003580' }]}
@@ -251,7 +249,7 @@ export default function TodayScreen() {
               {nearbyHotels.length > 0 && (
                 <View style={styles.bikeHotelList}>
                   <Text style={styles.bikeHotelLabel}>
-                    🚲 自行車友善旅宿（ゴール付近）
+                    {t.bikeFriendlyHotels}
                   </Text>
                   {nearbyHotels.map((hotel) => (
                     <View key={hotel.id} style={styles.bikeHotelItem}>
@@ -295,7 +293,7 @@ export default function TodayScreen() {
           if (hospitals.length === 0) return null;
           return (
             <View style={styles.hospitalSection}>
-              <Text style={styles.hospitalTitle}>🏥 緊急時の病院</Text>
+              <Text style={styles.hospitalTitle}>{t.emergencyHospitals}</Text>
               {hospitals.slice(0, 3).map((h, i) => (
                 <TouchableOpacity
                   key={i}
@@ -326,7 +324,7 @@ export default function TodayScreen() {
             activeOpacity={0.7}
           >
             <Text style={styles.ctaPrimaryIcon}>🚴</Text>
-            <Text style={styles.ctaPrimaryText}>走行開始</Text>
+            <Text style={styles.ctaPrimaryText}>{t.startRide}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -334,7 +332,7 @@ export default function TodayScreen() {
             onPress={() => router.back()}
             activeOpacity={0.7}
           >
-            <Text style={styles.ctaSecondaryText}>ゴール変更</Text>
+            <Text style={styles.ctaSecondaryText}>{t.changeGoal}</Text>
           </TouchableOpacity>
         </View>
 

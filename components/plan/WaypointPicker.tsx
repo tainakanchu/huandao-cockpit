@@ -15,6 +15,7 @@ import { getCheckpoints } from '@/lib/data/checkpoints';
 import { useWaypointStore, WAYPOINT_LIMIT } from '@/lib/store/waypointStore';
 import { useT } from '@/lib/i18n';
 import OsmSearchModal from '@/components/plan/OsmSearchModal';
+import translations from '@/lib/i18n/translations';
 import type {
   GoalCandidate,
   Checkpoint,
@@ -22,6 +23,7 @@ import type {
   WaypointCategory,
   WaypointSourceType,
 } from '@/lib/types';
+type T = typeof translations.ja;
 
 type Props = {
   visible: boolean;
@@ -56,14 +58,7 @@ type FilterKey =
   | 'sightseeing'
   | 'food';
 
-/**
- * Build the pickable item list from existing data:
- *  - Goals with accommodation → accommodation category
- *  - Major-tier goals → sightseeing (as notable cities)
- *  - Viewpoint checkpoints → sightseeing
- *  - Food-type checkpoints → food
- */
-function buildPickableItems(): PickableItem[] {
+function buildPickableItems(t: T): PickableItem[] {
   const goals = getGoalCandidates();
   const checkpoints = getCheckpoints();
 
@@ -81,7 +76,8 @@ function buildPickableItems(): PickableItem[] {
         lng: g.lng,
         kmFromStart: g.kmFromStart,
         category: 'accommodation',
-        subtitle: g.tier === 'major' ? '主要 · 宿泊可' : '宿泊可',
+        subtitle:
+          g.tier === 'major' ? t.subtitleMajorWithLodging : t.subtitleLodging,
         icon: '🏨',
         accent: CyclingColors.success,
       });
@@ -96,7 +92,7 @@ function buildPickableItems(): PickableItem[] {
         lng: g.lng,
         kmFromStart: g.kmFromStart,
         category: 'sightseeing',
-        subtitle: '主要都市',
+        subtitle: t.subtitleMajorCity,
         icon: '⭐',
         accent: CyclingColors.primary,
       });
@@ -115,7 +111,7 @@ function buildPickableItems(): PickableItem[] {
         lng: cp.lng,
         kmFromStart: cp.kmFromStart,
         category: 'sightseeing',
-        subtitle: '景勝地',
+        subtitle: t.subtitleScenic,
         icon: '🏞️',
         accent: CyclingColors.supply.viewpoint,
       });
@@ -130,7 +126,7 @@ function buildPickableItems(): PickableItem[] {
         lng: cp.lng,
         kmFromStart: cp.kmFromStart,
         category: 'food',
-        subtitle: 'グルメ',
+        subtitle: t.subtitleGourmet,
         icon: '🍜',
         accent: CyclingColors.supply.food,
       });
@@ -161,7 +157,7 @@ export default function WaypointPicker({
     (s) => s.toggleWaypointBySource,
   );
 
-  const allItems = useMemo(() => buildPickableItems(), []);
+  const allItems = useMemo(() => buildPickableItems(t), [t]);
 
   const filteredItems = useMemo(() => {
     let items = allItems;
@@ -297,7 +293,12 @@ export default function WaypointPicker({
             <Text style={styles.headerTitle}>{t.addWaypointTitle}</Text>
             <Text style={styles.headerSubtitle}>
               {hasDayRange && dayScopeOnly
-                ? `今日の区間 (KP ${Math.round(dayStartKm as number)}-${Math.round(dayEndKm as number)}km) · ${waypoints.length}/${WAYPOINT_LIMIT}`
+                ? t.pickerSubtitleDay(
+                    Math.round(dayStartKm as number),
+                    Math.round(dayEndKm as number),
+                    waypoints.length,
+                    WAYPOINT_LIMIT,
+                  )
                 : t.waypointsSubtitle(waypoints.length, WAYPOINT_LIMIT)}
             </Text>
           </View>
@@ -316,7 +317,7 @@ export default function WaypointPicker({
             onPress={() => setOsmVisible(true)}
             activeOpacity={0.7}
           >
-            <Text style={styles.osmButtonText}>🔍 場所を検索して追加</Text>
+            <Text style={styles.osmButtonText}>{t.osmAddButtonFromPicker}</Text>
           </TouchableOpacity>
         </View>
 
@@ -336,7 +337,7 @@ export default function WaypointPicker({
                   dayScopeOnly && styles.scopeButtonTextActive,
                 ]}
               >
-                📍 今日の区間
+                {t.scopeToday}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -353,7 +354,7 @@ export default function WaypointPicker({
                   !dayScopeOnly && styles.scopeButtonTextActive,
                 ]}
               >
-                🗺️ 全区間
+                {t.scopeAll}
               </Text>
             </TouchableOpacity>
           </View>

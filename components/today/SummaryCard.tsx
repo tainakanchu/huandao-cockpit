@@ -6,6 +6,7 @@ import {
   estimateTravelTime,
   countWaypointsInRange,
 } from '@/lib/logic/eta';
+import { useT } from '@/lib/i18n';
 import type { DayPlan, SunTimes } from '@/lib/types';
 
 type Props = {
@@ -58,6 +59,7 @@ function getWeatherSummary(plan: DayPlan) {
 }
 
 export default function SummaryCard({ plan, sunTimes }: Props) {
+  const t = useT();
   const waypoints = useWaypointStore((s) => s.waypoints);
   const { total: waypointCount, food: foodWaypointCount } = countWaypointsInRange(
     waypoints,
@@ -76,29 +78,29 @@ export default function SummaryCard({ plan, sunTimes }: Props) {
   const sunset = sunTimes ? formatTime(sunTimes.sunset) : '--:--';
 
   const metrics = [
-    { icon: '🚴', label: '距離', value: `${plan.distanceKm.toFixed(1)} km` },
-    { icon: '⛰️', label: '獲得標高', value: `${plan.elevationGainM} m` },
+    { icon: '🚴', label: t.distance, value: `${plan.distanceKm.toFixed(1)} km` },
+    { icon: '⛰️', label: t.elevation, value: `${plan.elevationGainM} m` },
     {
       icon: '⏱️',
-      label: '走行時間',
+      label: t.movingTime,
       value: formatHM(estimate.movingHours),
     },
     {
       icon: '🕒',
-      label: '所要時間',
+      label: t.totalTime,
       value: formatHM(estimate.totalHours),
-      sub: `+休憩 ${Math.round(estimate.stopHours * 60)}分`,
+      sub: t.stopTimeSub(Math.round(estimate.stopHours * 60)),
     },
-    { icon: '🌄', label: '日の出', value: sunrise },
-    { icon: '🌇', label: '日没', value: sunset },
-    { icon: '🌡️', label: '気温', value: weatherSummary.tempRange },
-    { icon: '💨', label: '風速', value: weatherSummary.windInfo },
-    { icon: '🌧️', label: '降水確率', value: weatherSummary.precipitation },
+    { icon: '🌄', label: t.sunrise, value: sunrise },
+    { icon: '🌇', label: t.sunset, value: sunset },
+    { icon: '🌡️', label: t.temperature, value: weatherSummary.tempRange },
+    { icon: '💨', label: t.windSpeed, value: weatherSummary.windInfo },
+    { icon: '🌧️', label: t.precipitation, value: weatherSummary.precipitation },
   ];
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>今日のサマリー</Text>
+      <Text style={styles.cardTitle}>{t.todaySummary}</Text>
       <View style={styles.grid}>
         {metrics.map((m, idx) => (
           <View key={idx} style={styles.metricItem}>

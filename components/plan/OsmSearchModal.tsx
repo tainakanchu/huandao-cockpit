@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 import { searchNominatim, type OsmSearchResult } from '@/lib/api/osmSearch';
 import { snapToRoute } from '@/lib/geo/snap';
 import { haversineDistance } from '@/lib/geo/distance';
@@ -72,6 +73,7 @@ export default function OsmSearchModal({
   dayStartKm,
   dayEndKm,
 }: Props) {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<OsmSearchResult[]>([]);
@@ -187,9 +189,11 @@ export default function OsmSearchModal({
                 detourKm > 5 && styles.itemDetourFar,
               ]}
             >
-              経路から {detourKm < 1 ? '<1' : detourKm.toFixed(1)}km
+              {t.osmDetour(detourKm < 1 ? '<1' : detourKm.toFixed(1))}
             </Text>
-            {inToday && <Text style={styles.itemTodayBadge}>今日の区間</Text>}
+            {inToday && (
+              <Text style={styles.itemTodayBadge}>{t.osmTodaySegment}</Text>
+            )}
           </View>
         </View>
         <View style={[styles.plusBadge, alreadyAdded && styles.plusBadgeAdded]}>
@@ -205,7 +209,7 @@ export default function OsmSearchModal({
       return (
         <View style={[styles.noticeBox, styles.noticeBoxSuccess]}>
           <Text style={styles.noticeText}>
-            ✓ {notice.name} を追加しました (KP {notice.km}km)
+            {t.osmAddedNotice(notice.name, notice.km)}
           </Text>
         </View>
       );
@@ -213,7 +217,7 @@ export default function OsmSearchModal({
     if (notice.type === 'duplicate') {
       return (
         <View style={[styles.noticeBox, styles.noticeBoxWarn]}>
-          <Text style={styles.noticeText}>既に追加済みです</Text>
+          <Text style={styles.noticeText}>{t.osmDuplicateNotice}</Text>
         </View>
       );
     }
@@ -221,14 +225,16 @@ export default function OsmSearchModal({
       return (
         <View style={[styles.noticeBox, styles.noticeBoxWarn]}>
           <Text style={styles.noticeText}>
-            経由地は最大 {WAYPOINT_LIMIT} 件までです
+            {t.waypointLimitReached(WAYPOINT_LIMIT)}
           </Text>
         </View>
       );
     }
     return (
       <View style={[styles.noticeBox, styles.noticeBoxError]}>
-        <Text style={styles.noticeText}>追加失敗: {notice.message}</Text>
+        <Text style={styles.noticeText}>
+          {t.osmAddFailedNotice(notice.message)}
+        </Text>
       </View>
     );
   })();
@@ -242,20 +248,20 @@ export default function OsmSearchModal({
     >
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>🔍 場所を検索</Text>
+          <Text style={styles.headerTitle}>{t.osmSearchTitle}</Text>
           <TouchableOpacity
             style={styles.closeButton}
             onPress={onClose}
             activeOpacity={0.7}
           >
-            <Text style={styles.closeButtonText}>閉じる</Text>
+            <Text style={styles.closeButtonText}>{t.close}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.inputRow}>
           <TextInput
             style={styles.input}
-            placeholder="例: 日月潭、九份老街、7-11 台南..."
+            placeholder={t.osmPlaceholder}
             placeholderTextColor={CyclingColors.textLight}
             value={query}
             onChangeText={setQuery}
@@ -270,32 +276,29 @@ export default function OsmSearchModal({
             disabled={loading}
             activeOpacity={0.7}
           >
-            <Text style={styles.searchButtonText}>検索</Text>
+            <Text style={styles.searchButtonText}>{t.osmSearchButton}</Text>
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.hint}>
-          名前や地名で検索できます。ルートから離れた場所はそのまま地図に表示され、
-          立ち寄り順は最寄りのルート km で並びます。
-        </Text>
+        <Text style={styles.hint}>{t.osmHint}</Text>
 
         {noticeNode}
 
         {loading && (
           <View style={styles.loadingBox}>
             <ActivityIndicator color={CyclingColors.primary} />
-            <Text style={styles.loadingText}>検索中...</Text>
+            <Text style={styles.loadingText}>{t.osmSearching}</Text>
           </View>
         )}
         {error && (
           <View style={styles.errorBox}>
-            <Text style={styles.errorText}>検索失敗: {error}</Text>
+            <Text style={styles.errorText}>{t.osmSearchFailed(error)}</Text>
           </View>
         )}
 
         {!loading && !error && results.length === 0 && query.length > 0 && (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>結果なし</Text>
+            <Text style={styles.emptyText}>{t.osmNoResults}</Text>
           </View>
         )}
 

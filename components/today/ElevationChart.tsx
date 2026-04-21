@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Svg, { Path, Defs, LinearGradient, Stop, Line, Text as SvgText, Circle, Rect } from "react-native-svg";
 import { CyclingColors } from "@/constants/Colors";
+import { useT } from "@/lib/i18n";
 import type { ElevationPoint, Hazard, Checkpoint } from "@/lib/types";
 
 type Props = {
@@ -27,6 +28,7 @@ export default function ElevationChart({
   width = 358,
   height = 180,
 }: Props) {
+  const t = useT();
   const chartWidth = width - PADDING.left - PADDING.right;
   const chartHeight = height - PADDING.top - PADDING.bottom;
 
@@ -172,14 +174,14 @@ export default function ElevationChart({
   if (points.length < 2) {
     return (
       <View style={[styles.container, { width, height }]}>
-        <Text style={styles.noData}>高低差データなし</Text>
+        <Text style={styles.noData}>{t.noElevationData}</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>高低差プロファイル</Text>
+      <Text style={styles.title}>{t.elevationProfile}</Text>
       <View style={styles.chartContainer}>
         <Svg width={width} height={height}>
           <Defs>
@@ -312,19 +314,19 @@ export default function ElevationChart({
         {hazardZones.length > 0 && (
           <View style={styles.legendItem}>
             <View style={[styles.legendColor, { backgroundColor: CyclingColors.critical, opacity: 0.3 }]} />
-            <Text style={styles.legendText}>急坂区間</Text>
+            <Text style={styles.legendText}>{t.steepSection}</Text>
           </View>
         )}
         {supplyMarkers.length > 0 && (
           <View style={styles.legendItem}>
             <View style={[styles.legendColor, { backgroundColor: CyclingColors.supply.seven_eleven, borderRadius: 4 }]} />
-            <Text style={styles.legendText}>補給</Text>
+            <Text style={styles.legendText}>{t.supply}</Text>
           </View>
         )}
         {currentMarker && (
           <View style={styles.legendItem}>
             <View style={[styles.legendColor, { backgroundColor: CyclingColors.accent, borderRadius: 4 }]} />
-            <Text style={styles.legendText}>現在地</Text>
+            <Text style={styles.legendText}>{t.currentLocation}</Text>
           </View>
         )}
       </View>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 import type { Checkpoint, CheckpointType } from '@/lib/types';
 
 type Props = {
@@ -22,45 +23,49 @@ const checkpointIcons: Record<CheckpointType, string> = {
   viewpoint: '📍',
 };
 
-const checkpointLabels: Record<CheckpointType, string> = {
-  seven_eleven: 'セブンイレブン',
-  family_mart: 'ファミリーマート',
-  hi_life: 'Hi-Life',
-  ok_mart: 'OK Mart',
-  water: '水場',
-  food: '食事処',
-  station: '駅',
-  bike_shop: '自転車店',
-  police: '交番',
-  viewpoint: '景観スポット',
-};
-
 export default function NextEventCard({
   checkpoint,
   distanceKm,
   isNext = true,
 }: Props) {
+  const t = useT();
+  const checkpointLabel = (type: CheckpointType): string => {
+    switch (type) {
+      case 'seven_eleven': return t.cpSevenEleven;
+      case 'family_mart': return t.cpFamilyMart;
+      case 'hi_life': return t.cpHiLife;
+      case 'ok_mart': return t.cpOkMart;
+      case 'water': return t.cpWater;
+      case 'food': return t.cpFood;
+      case 'station': return t.cpStation;
+      case 'bike_shop': return t.cpBikeShop;
+      case 'police': return t.cpPolice;
+      case 'viewpoint': return t.cpViewpoint;
+      default: return type;
+    }
+  };
+
   if (!checkpoint) {
     return (
       <View style={[styles.card, isNext ? styles.primaryCard : styles.secondaryCard]}>
         <Text style={[styles.emptyText, isNext && styles.primaryText]}>
-          {isNext ? '次のイベントなし' : '---'}
+          {isNext ? t.noNextEvent : '---'}
         </Text>
       </View>
     );
   }
 
   const icon = checkpointIcons[checkpoint.type] ?? '📍';
-  const typeLabel = checkpointLabels[checkpoint.type] ?? checkpoint.type;
+  const typeLabel = checkpointLabel(checkpoint.type);
 
   return (
     <View style={[styles.card, isNext ? styles.primaryCard : styles.secondaryCard]}>
       <View style={styles.header}>
         <Text style={[styles.typeLabel, isNext && styles.primaryText]}>
-          {isNext ? '次' : 'その次'}
+          {isNext ? t.next : t.after}
         </Text>
         {checkpoint.reliability === 'low' && (
-          <Text style={styles.reliabilityBadge}>未確認</Text>
+          <Text style={styles.reliabilityBadge}>{t.unconfirmed}</Text>
         )}
       </View>
 

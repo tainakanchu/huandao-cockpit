@@ -119,8 +119,10 @@ export default function HomeScreen() {
     const beforeCurrent = allGoals
       .filter((g) => g.kmFromStart <= currentKm)
       .sort((a, b) => b.kmFromStart - a.kmFromStart);
-    return beforeCurrent.length > 0 ? beforeCurrent[0].nameZh : '台北';
-  }, [allGoals, currentKm]);
+    return beforeCurrent.length > 0
+      ? beforeCurrent[0].nameZh
+      : t.startDefaultName;
+  }, [allGoals, currentKm, t]);
 
   if (isLoading) {
     return (
@@ -181,13 +183,11 @@ export default function HomeScreen() {
               const p: TotalProgress = getTotalProgress();
               return (
                 <Text style={styles.historyRowSub}>
-                  {p.completedRides} 回 · 累計 {p.completedKm.toFixed(0)}km
+                  {t.historySummary(p.completedRides, p.completedKm.toFixed(0))}
                 </Text>
               );
             })() : (
-              <Text style={styles.historyRowSub}>
-                走行を完了するとここに記録されます
-              </Text>
+              <Text style={styles.historyRowSub}>{t.historyEmptyHint}</Text>
             )}
           </View>
           <Text style={styles.historyRowArrow}>→</Text>

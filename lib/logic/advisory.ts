@@ -1,76 +1,62 @@
 // ============================================
-// アドバイザリーカード生成
+// アドバイザリーカード生成（i18n 対応）
 // ============================================
 
 import type { DayPlan, AdvisoryCard } from "@/lib/types";
 import { calcWindScore } from "@/lib/logic/wind";
+import translations, { type Locale } from "@/lib/i18n/translations";
+
+type T = (typeof translations)[Locale];
 
 /**
  * Generate up to 3 advisory cards for a DayPlan, sorted by priority.
- *
- * Checks for:
- * 1. Wind conditions
- * 2. Climbing hazards
- * 3. Heat risk
- * 4. Rain risk
- * 5. Supply gaps
- * 6. Traffic/danger hazards
  */
-export function generateAdvisoryCards(plan: DayPlan): AdvisoryCard[] {
+export function generateAdvisoryCards(
+  plan: DayPlan,
+  locale: Locale = 'ja',
+): AdvisoryCard[] {
+  const t = translations[locale];
   const cards: AdvisoryCard[] = [];
 
-  // Wind card
-  const windCard = generateWindCard(plan);
+  const windCard = generateWindCard(plan, t);
   if (windCard) cards.push(windCard);
 
-  // Climb card
-  const climbCard = generateClimbCard(plan);
+  const climbCard = generateClimbCard(plan, t);
   if (climbCard) cards.push(climbCard);
 
-  // Heat card
-  const heatCard = generateHeatCard(plan);
+  const heatCard = generateHeatCard(plan, t);
   if (heatCard) cards.push(heatCard);
 
-  // Rain card
-  const rainCard = generateRainCard(plan);
+  const rainCard = generateRainCard(plan, t);
   if (rainCard) cards.push(rainCard);
 
-  // Supply gap card
-  const supplyCard = generateSupplyCard(plan);
+  const supplyCard = generateSupplyCard(plan, t);
   if (supplyCard) cards.push(supplyCard);
 
-  // Danger card (traffic, tunnels)
-  const dangerCard = generateDangerCard(plan);
+  const dangerCard = generateDangerCard(plan, t);
   if (dangerCard) cards.push(dangerCard);
 
-  // Sort by priority (lower = more urgent) and return top 3
   cards.sort((a, b) => a.priority - b.priority);
   return cards.slice(0, 3);
 }
 
-/**
- * Check if the estimated arrival time is dangerously close to or after sunset.
- *
- * @param eta         Estimated time of arrival
- * @param sunsetTime  Sunset time for that day
- * @returns           An advisory card if there's a sunset risk, null otherwise
- */
 export function checkSunsetRisk(
   eta: Date,
-  sunsetTime: Date
+  sunsetTime: Date,
+  locale: Locale = 'ja',
 ): AdvisoryCard | null {
+  const t = translations[locale];
   const minutesBeforeSunset =
     (sunsetTime.getTime() - eta.getTime()) / (1000 * 60);
 
   if (minutesBeforeSunset < 0) {
-    // Arriving after sunset
     const minutesAfter = Math.abs(Math.round(minutesBeforeSunset));
     return {
       id: "sunset-critical",
       priority: 1,
       type: "time",
-      title: "日没後の到着",
-      body: `現在のペースでは日没の約 ${minutesAfter} 分後に到着する見込みです。本日の走行距離を短縮するか、ペースを上げることを検討してください。台湾の幹線道路での夜間走行は非常に危険です。`,
+      title: t.advArrivingAfterDark,
+      body: t.bodySunsetCritical(minutesAfter),
       severity: "critical",
     };
   }
@@ -80,8 +66,8 @@ export function checkSunsetRisk(
       id: "sunset-warning",
       priority: 2,
       type: "time",
-      title: "日没リスク",
-      body: `到着予定は日没のわずか ${Math.round(minutesBeforeSunset)} 分前です。ペースを維持するか、早めの停止を検討してください。`,
+      title: t.advSunsetRisk,
+      body: t.bodySunsetWarning(Math.round(minutesBeforeSunset)),
       severity: "warning",
     };
   }
@@ -91,8 +77,8 @@ export function checkSunsetRisk(
       id: "sunset-info",
       priority: 4,
       type: "time",
-      title: "日照時間に注意",
-      body: `到着予定は日没の約 ${Math.round(minutesBeforeSunset)} 分前です。ペースに注意してください。`,
+      title: t.advMonitorDaylight,
+      body: t.bodySunsetInfo(Math.round(minutesBeforeSunset)),
       severity: "info",
     };
   }
@@ -100,10 +86,7 @@ export function checkSunsetRisk(
   return null;
 }
 
-/**
- * Generate a wind advisory card if wind conditions are significant.
- */
-export function generateWindCard(plan: DayPlan): AdvisoryCard | null {
+export function generateWindCard(plan: DayPlan, t: T): AdvisoryCard | null {
   const weather = plan.weather;
   if (!weather || weather.length === 0) return null;
 
@@ -115,8 +98,8 @@ export function generateWindCard(plan: DayPlan): AdvisoryCard | null {
       id: "wind-critical",
       priority: 1,
       type: "wind",
-      title: "強い向かい風",
-      body: `最大 ${Math.round(maxWind)} km/h の強い向かい風が予想されます。大幅なペースダウンが見込まれます。待機またはルート変更を検討してください。`,
+      title: t.advStrongHeadwind,
+      body: t.bodyStrongHeadwind(Math.round(maxWind)),
       severity: "critical",
     };
   }
@@ -126,8 +109,8 @@ export function generateWindCard(plan: DayPlan): AdvisoryCard | null {
       id: "wind-warning",
       priority: 3,
       type: "wind",
-      title: "中程度の向かい風",
-      body: `最大 ${Math.round(maxWind)} km/h の向かい風が予想されます。時間と体力に余裕を持ってください。`,
+      title: t.advModerateHeadwind,
+      body: t.bodyModerateHeadwind(Math.round(maxWind)),
       severity: "warning",
     };
   }
@@ -137,8 +120,8 @@ export function generateWindCard(plan: DayPlan): AdvisoryCard | null {
       id: "wind-tailwind",
       priority: 5,
       type: "wind",
-      title: "追い風",
-      body: `本日は最大 ${Math.round(maxWind)} km/h の追い風が期待できます。距離を稼ぐ好条件です。`,
+      title: t.advTailwind,
+      body: t.bodyTailwind(Math.round(maxWind)),
       severity: "info",
     };
   }
@@ -146,26 +129,26 @@ export function generateWindCard(plan: DayPlan): AdvisoryCard | null {
   return null;
 }
 
-// ── Internal card generators ──────────────────────────────────────
-
-/**
- * Generate climb advisory card.
- */
-function generateClimbCard(plan: DayPlan): AdvisoryCard | null {
+function generateClimbCard(plan: DayPlan, t: T): AdvisoryCard | null {
   if (plan.elevationGainM < 500) return null;
 
   const climbHazards = plan.hazards.filter((h) => h.type === "climb");
-  const maxSeverity = climbHazards.length > 0
-    ? Math.max(...climbHazards.map((h) => h.severity))
-    : 0;
+  const maxSeverity =
+    climbHazards.length > 0
+      ? Math.max(...climbHazards.map((h) => h.severity))
+      : 0;
 
   if (plan.elevationGainM >= 1500 || maxSeverity >= 4) {
+    const extra =
+      climbHazards.length > 0
+        ? climbHazards[0].message
+        : t.bodyClimbCriticalDefault;
     return {
       id: "climb-critical",
       priority: 1,
       type: "climb",
-      title: "大きな登坂日",
-      body: `合計獲得標高: ${Math.round(plan.elevationGainM)} m。${climbHazards.length > 0 ? climbHazards[0].message : "ペース配分に注意し、十分な食料と水を確保してください。"}`,
+      title: t.advMajorClimbing,
+      body: t.bodyClimbCritical(Math.round(plan.elevationGainM), extra),
       severity: "critical",
     };
   }
@@ -175,8 +158,8 @@ function generateClimbCard(plan: DayPlan): AdvisoryCard | null {
       id: "climb-warning",
       priority: 3,
       type: "climb",
-      title: "かなりの登坂",
-      body: `合計獲得標高: ${Math.round(plan.elevationGainM)} m。時間に余裕を持ち、登坂では体力を温存してください。`,
+      title: t.advSignificantClimbing,
+      body: t.bodyClimbWarning(Math.round(plan.elevationGainM)),
       severity: "warning",
     };
   }
@@ -185,16 +168,13 @@ function generateClimbCard(plan: DayPlan): AdvisoryCard | null {
     id: "climb-info",
     priority: 5,
     type: "climb",
-    title: "中程度の登坂",
-    body: `本日の合計獲得標高: ${Math.round(plan.elevationGainM)} m。`,
+    title: t.advModerateClimbing,
+    body: t.bodyClimbInfo(Math.round(plan.elevationGainM)),
     severity: "info",
   };
 }
 
-/**
- * Generate heat advisory card.
- */
-function generateHeatCard(plan: DayPlan): AdvisoryCard | null {
+function generateHeatCard(plan: DayPlan, t: T): AdvisoryCard | null {
   const weather = plan.weather;
   if (!weather || weather.length === 0) return null;
 
@@ -205,8 +185,8 @@ function generateHeatCard(plan: DayPlan): AdvisoryCard | null {
       id: "heat-critical",
       priority: 1,
       type: "heat",
-      title: "酷暑警報",
-      body: `体感温度は最高 ${Math.round(maxFeelsLike)}°C に達する見込みです。ピーク時間帯（11:00〜14:00）は休憩してください。水分補給を大幅に増やしてください。`,
+      title: t.advExtremeHeat,
+      body: t.bodyHeatCritical(Math.round(maxFeelsLike)),
       severity: "critical",
     };
   }
@@ -216,8 +196,8 @@ function generateHeatCard(plan: DayPlan): AdvisoryCard | null {
       id: "heat-warning",
       priority: 3,
       type: "heat",
-      title: "暑さ注意",
-      body: `体感温度は最高 ${Math.round(maxFeelsLike)}°C に達する見込みです。早朝に出発し、日陰で休憩を取り、こまめに水分補給してください。`,
+      title: t.advHeatAdvisory,
+      body: t.bodyHeatWarning(Math.round(maxFeelsLike)),
       severity: "warning",
     };
   }
@@ -225,15 +205,12 @@ function generateHeatCard(plan: DayPlan): AdvisoryCard | null {
   return null;
 }
 
-/**
- * Generate rain advisory card.
- */
-function generateRainCard(plan: DayPlan): AdvisoryCard | null {
+function generateRainCard(plan: DayPlan, t: T): AdvisoryCard | null {
   const weather = plan.weather;
   if (!weather || weather.length === 0) return null;
 
   const maxPrecipProb = Math.max(
-    ...weather.map((s) => s.precipitationProbability)
+    ...weather.map((s) => s.precipitationProbability),
   );
   const totalPrecip = weather.reduce((sum, s) => sum + s.precipitationMm, 0);
 
@@ -242,8 +219,8 @@ function generateRainCard(plan: DayPlan): AdvisoryCard | null {
       id: "rain-critical",
       priority: 2,
       type: "rain",
-      title: "大雨予報",
-      body: `最大 ${totalPrecip.toFixed(0)} mm の降雨が予想されます（確率 ${maxPrecipProb}%）。路面が滑りやすくなります。レインギアの準備または待機を検討してください。`,
+      title: t.advHeavyRain,
+      body: t.bodyRainCritical(Number(totalPrecip.toFixed(0)), maxPrecipProb),
       severity: "critical",
     };
   }
@@ -253,8 +230,8 @@ function generateRainCard(plan: DayPlan): AdvisoryCard | null {
       id: "rain-warning",
       priority: 3,
       type: "rain",
-      title: "降雨の可能性",
-      body: `降雨が予想されます（確率 ${maxPrecipProb}%、約 ${totalPrecip.toFixed(0)} mm）。レインギアを準備し、下り坂では注意してください。`,
+      title: t.advRainLikely,
+      body: t.bodyRainWarning(maxPrecipProb, Number(totalPrecip.toFixed(0))),
       severity: "warning",
     };
   }
@@ -264,8 +241,8 @@ function generateRainCard(plan: DayPlan): AdvisoryCard | null {
       id: "rain-info",
       priority: 5,
       type: "rain",
-      title: "にわか雨の可能性",
-      body: `降水確率 ${maxPrecipProb}%。レインギアの準備を検討してください。`,
+      title: t.advPossibleShowers,
+      body: t.bodyRainInfo(maxPrecipProb),
       severity: "info",
     };
   }
@@ -273,11 +250,7 @@ function generateRainCard(plan: DayPlan): AdvisoryCard | null {
   return null;
 }
 
-/**
- * Generate supply gap advisory card.
- */
-function generateSupplyCard(plan: DayPlan): AdvisoryCard | null {
-  // Check for supply-type checkpoints in the day
+function generateSupplyCard(plan: DayPlan, t: T): AdvisoryCard | null {
   const supplyTypes = new Set([
     "seven_eleven",
     "family_mart",
@@ -288,7 +261,7 @@ function generateSupplyCard(plan: DayPlan): AdvisoryCard | null {
   ]);
 
   const supplyPoints = plan.checkpoints.filter((cp) =>
-    supplyTypes.has(cp.type)
+    supplyTypes.has(cp.type),
   );
 
   if (supplyPoints.length === 0) {
@@ -296,15 +269,14 @@ function generateSupplyCard(plan: DayPlan): AdvisoryCard | null {
       id: "supply-critical",
       priority: 1,
       type: "supply",
-      title: "補給ポイントなし",
-      body: "本日のルート上にコンビニや水源がありません。出発時にすべての食料と水を携行してください。",
+      title: t.advNoSupply,
+      body: t.bodyNoSupply,
       severity: "critical",
     };
   }
 
-  // Check for gaps
   const sorted = [...supplyPoints].sort(
-    (a, b) => a.kmFromStart - b.kmFromStart
+    (a, b) => a.kmFromStart - b.kmFromStart,
   );
 
   let maxGap = sorted[0].kmFromStart - plan.startKm;
@@ -320,8 +292,8 @@ function generateSupplyCard(plan: DayPlan): AdvisoryCard | null {
       id: "supply-gap-warning",
       priority: 2,
       type: "supply",
-      title: "長い補給空白区間",
-      body: `${Math.round(maxGap)} km にわたって補給ポイントがありません。この区間に入る前に十分に補給してください。`,
+      title: t.advLongSupplyGap,
+      body: t.bodyLongSupplyGap(Math.round(maxGap)),
       severity: "critical",
     };
   }
@@ -331,8 +303,8 @@ function generateSupplyCard(plan: DayPlan): AdvisoryCard | null {
       id: "supply-gap-info",
       priority: 4,
       type: "supply",
-      title: "補給空白区間",
-      body: `${Math.round(maxGap)} km にわたって補給ポイントがありません。補給計画を立ててください。`,
+      title: t.advSupplyGap,
+      body: t.bodySupplyGap(Math.round(maxGap)),
       severity: "warning",
     };
   }
@@ -340,12 +312,9 @@ function generateSupplyCard(plan: DayPlan): AdvisoryCard | null {
   return null;
 }
 
-/**
- * Generate danger advisory for traffic/tunnel hazards.
- */
-function generateDangerCard(plan: DayPlan): AdvisoryCard | null {
+function generateDangerCard(plan: DayPlan, t: T): AdvisoryCard | null {
   const dangerHazards = plan.hazards.filter(
-    (h) => h.type === "traffic" || h.type === "tunnel"
+    (h) => h.type === "traffic" || h.type === "tunnel",
   );
 
   if (dangerHazards.length === 0) return null;
@@ -358,7 +327,7 @@ function generateDangerCard(plan: DayPlan): AdvisoryCard | null {
       id: `danger-${worst.id}`,
       priority: 2,
       type: "danger",
-      title: "危険区間",
+      title: t.advDangerousSection,
       body: worst.message,
       severity: "critical",
     };
@@ -369,8 +338,8 @@ function generateDangerCard(plan: DayPlan): AdvisoryCard | null {
       id: "danger-warning",
       priority: 4,
       type: "danger",
-      title: "前方注意",
-      body: `本日のルートに ${dangerHazards.length} 箇所の危険区間があります。交通量の多い区間やトンネルでは十分注意してください。`,
+      title: t.advCautionAhead,
+      body: t.bodyCautionAhead(dangerHazards.length),
       severity: "warning",
     };
   }

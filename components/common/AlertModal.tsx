@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 import type { AdvisoryCard } from '@/lib/types';
 
 type Props = {
@@ -32,6 +33,7 @@ export default function AlertModal({
   onDismiss,
   onAlternateGoal,
 }: Props) {
+  const t = useT();
   if (!card) return null;
 
   const severityColor = CyclingColors.severity[card.severity];
@@ -63,7 +65,7 @@ export default function AlertModal({
               onPress={onDismiss}
               activeOpacity={0.7}
             >
-              <Text style={styles.buttonText}>了解</Text>
+              <Text style={styles.buttonText}>{t.confirm}</Text>
             </TouchableOpacity>
 
             {onAlternateGoal && card.severity === 'critical' && (
@@ -73,7 +75,7 @@ export default function AlertModal({
                 activeOpacity={0.7}
               >
                 <Text style={[styles.buttonText, styles.altButtonText]}>
-                  ゴール変更
+                  {t.changeGoal}
                 </Text>
               </TouchableOpacity>
             )}

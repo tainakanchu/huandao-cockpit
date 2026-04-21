@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
 import { getGoalCandidates } from '@/lib/data/goals';
+import { useT } from '@/lib/i18n';
 import type { GoalCandidate } from '@/lib/types';
 
 type Props = {
@@ -21,10 +22,10 @@ type Props = {
   onClose: () => void;
 };
 
-const tierLabels: Record<string, { label: string; color: string }> = {
-  major: { label: '主要', color: CyclingColors.primary },
-  mid: { label: '中間', color: CyclingColors.accent },
-  minor: { label: '小規模', color: CyclingColors.textSecondary },
+const tierColors: Record<string, string> = {
+  major: CyclingColors.primary,
+  mid: CyclingColors.accent,
+  minor: CyclingColors.textSecondary,
 };
 
 export default function PositionAdjuster({
@@ -33,7 +34,11 @@ export default function PositionAdjuster({
   onSetPosition,
   onClose,
 }: Props) {
+  const t = useT();
   const [manualKm, setManualKm] = useState('');
+
+  const tierLabel = (tier: string): string =>
+    tier === 'major' ? t.tierMajor : tier === 'mid' ? t.tierMid : t.tierMinor;
 
   const sortedGoals = useMemo(() => {
     const all = getGoalCandidates();
@@ -41,21 +46,21 @@ export default function PositionAdjuster({
       .filter((g) => g.tier === 'major' || g.tier === 'mid')
       .sort((a, b) => a.kmFromStart - b.kmFromStart);
 
-    // ルートは環状: 台北（km 944）が終点だが出発点（km 0）でもある
-    // km 0 にスタート地点エントリを追加
+    // Route is circular: Taipei (km 944) is also the start (km 0). Prepend a
+    // synthetic start entry so users can rewind to KP 0.
     const taipei = all.find((g) => g.name.includes('Taipei'));
     if (taipei && !filtered.some((g) => g.kmFromStart === 0)) {
       filtered.unshift({
         ...taipei,
         id: 'start-taipei',
         name: 'Taipei / Songshan (Start)',
-        nameZh: '台北/松山（出発点）',
+        nameZh: t.startPointName,
         kmFromStart: 0,
       });
     }
 
     return filtered;
-  }, []);
+  }, [t]);
 
   // Find the closest goal to currentKm for highlighting
   const closestGoalId = useMemo(() => {
@@ -99,9 +104,9 @@ export default function PositionAdjuster({
           <View style={styles.card}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>現在位置を設定</Text>
+              <Text style={styles.title}>{t.setPosition}</Text>
               <Text style={styles.currentPosition}>
-                現在: {currentKm} km
+                {t.current}: {currentKm} km
               </Text>
             </View>
 
@@ -111,7 +116,10 @@ export default function PositionAdjuster({
               showsVerticalScrollIndicator={false}
             >
               {sortedGoals.map((goal) => {
-                const tier = tierLabels[goal.tier] ?? tierLabels.minor;
+                const tier = {
+                  label: tierLabel(goal.tier),
+                  color: tierColors[goal.tier] ?? tierColors.minor,
+                };
                 const isClosest = goal.id === closestGoalId;
 
                 return (
@@ -176,7 +184,7 @@ export default function PositionAdjuster({
             <View style={styles.manualInputRow}>
               <TextInput
                 style={styles.manualInput}
-                placeholder="km を入力..."
+                placeholder={t.enterKm}
                 placeholderTextColor={CyclingColors.textLight}
                 value={manualKm}
                 onChangeText={setManualKm}
@@ -194,7 +202,7 @@ export default function PositionAdjuster({
                 disabled={!manualKm || isNaN(parseFloat(manualKm))}
                 activeOpacity={0.7}
               >
-                <Text style={styles.manualSubmitText}>設定</Text>
+                <Text style={styles.manualSubmitText}>{t.set}</Text>
               </TouchableOpacity>
             </View>
 
@@ -204,7 +212,7 @@ export default function PositionAdjuster({
               onPress={onClose}
               activeOpacity={0.7}
             >
-              <Text style={styles.cancelText}>キャンセル</Text>
+              <Text style={styles.cancelText}>{t.cancel}</Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>

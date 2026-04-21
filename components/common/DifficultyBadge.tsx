@@ -1,25 +1,28 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 import type { DifficultyLevel } from '@/lib/types';
 
 type Props = {
   level: DifficultyLevel;
 };
 
-const labels: Record<DifficultyLevel, string> = {
-  Easy: 'やさしい',
-  Moderate: 'ふつう',
-  Hard: 'きつい',
-  Critical: '危険',
-};
-
 export default function DifficultyBadge({ level }: Props) {
+  const t = useT();
+  const label =
+    level === 'Easy'
+      ? t.diffEasy
+      : level === 'Moderate'
+        ? t.diffModerate
+        : level === 'Hard'
+          ? t.diffHard
+          : t.diffCritical;
   const bgColor = CyclingColors.difficulty[level];
 
   return (
     <View style={[styles.badge, { backgroundColor: bgColor }]}>
-      <Text style={styles.text}>{labels[level]}</Text>
+      <Text style={styles.text}>{label}</Text>
     </View>
   );
 }

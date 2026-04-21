@@ -2,8 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
 import { usePlanStore } from '@/lib/store/planStore';
-
-const DAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+import { useT } from '@/lib/i18n';
 
 function sameDay(a: Date, b: Date): boolean {
   return (
@@ -13,19 +12,27 @@ function sameDay(a: Date, b: Date): boolean {
   );
 }
 
-function chipLabel(offset: number, date: Date): { main: string; sub: string } {
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  const weekday = DAY_LABELS[date.getDay()];
-  if (offset === 0) return { main: '今日', sub: `${mm}/${dd}(${weekday})` };
-  if (offset === 1) return { main: '明日', sub: `${mm}/${dd}(${weekday})` };
-  return { main: `+${offset}日`, sub: `${mm}/${dd}(${weekday})` };
-}
-
 export default function RideDateChips() {
+  const t = useT();
   const rideDate = usePlanStore((s) => s.rideDate);
   const setRideDate = usePlanStore((s) => s.setRideDate);
   const isLoading = usePlanStore((s) => s.isLoading);
+
+  const chipLabel = (
+    offset: number,
+    date: Date,
+  ): { main: string; sub: string } => {
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    const weekday = t.weekdays[date.getDay()];
+    if (offset === 0) {
+      return { main: t.rideDateToday, sub: `${mm}/${dd}(${weekday})` };
+    }
+    if (offset === 1) {
+      return { main: t.rideDateTomorrow, sub: `${mm}/${dd}(${weekday})` };
+    }
+    return { main: t.rideDateOffset(offset), sub: `${mm}/${dd}(${weekday})` };
+  };
 
   const chips = useMemo(() => {
     const today = new Date();
@@ -40,7 +47,7 @@ export default function RideDateChips() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>走る日</Text>
+      <Text style={styles.label}>{t.rideDateLabel}</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

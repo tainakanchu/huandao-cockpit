@@ -18,9 +18,11 @@ import NextEventCard from '@/components/next/NextEventCard';
 import ConditionPanel from '@/components/next/ConditionPanel';
 import QuickActions from '@/components/next/QuickActions';
 import AlertModal from '@/components/common/AlertModal';
+import { useT } from '@/lib/i18n';
 import type { AdvisoryCard } from '@/lib/types';
 
 export default function NextScreen() {
+  const t = useT();
   const dayPlan = usePlanStore((s) => s.dayPlan);
   const selectedGoal = usePlanStore((s) => s.selectedGoal);
   const sunTimes = usePlanStore((s) => s.sunTimes);
@@ -101,62 +103,64 @@ export default function NextScreen() {
     return sorted.length > 0 ? sorted[0] : null;
   }, [dayPlan]);
 
+  const timeLocale = 'ja-JP';
+
   const handleSupplyDone = useCallback(() => {
     resetWater();
-    Alert.alert('補給完了', '水分レベルをリセットしました');
-  }, [resetWater]);
+    Alert.alert(t.supplyComplete, t.waterReset);
+  }, [resetWater, t]);
 
   const handleRest = useCallback(() => {
-    addNote(`休憩: ${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`);
-    Alert.alert('休憩記録', '休憩を記録しました');
-  }, [addNote]);
+    addNote(
+      `${t.restLogPrefix}: ${new Date().toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit' })}`,
+    );
+    Alert.alert(t.restRecorded, t.restRecordedMsg);
+  }, [addNote, t]);
 
   const handleNote = useCallback(() => {
-    addNote(`体調メモ: ${new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}`);
-    Alert.alert('メモ記録', '体調メモを記録しました');
-  }, [addNote]);
+    addNote(
+      `${t.noteLogPrefix}: ${new Date().toLocaleTimeString(timeLocale, { hour: '2-digit', minute: '2-digit' })}`,
+    );
+    Alert.alert(t.noteRecorded, t.noteRecordedMsg);
+  }, [addNote, t]);
 
   const handleChangeGoal = useCallback(() => {
-    Alert.alert(
-      'ゴール変更',
-      '走行を中断してゴールを変更しますか？',
-      [
-        { text: 'キャンセル', style: 'cancel' },
-        {
-          text: '変更する',
-          style: 'destructive',
-          onPress: () => router.replace('/'),
-        },
-      ],
-    );
-  }, []);
+    Alert.alert(t.changeGoalConfirmTitle, t.changeGoalConfirmMessage, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: t.changeConfirm,
+        style: 'destructive',
+        onPress: () => router.replace('/'),
+      },
+    ]);
+  }, [t]);
 
   const handleArrive = useCallback(() => {
     Alert.alert(
-      'ゴール到着',
-      `${selectedGoal?.nameZh ?? 'ゴール'}に到着しましたか？`,
+      t.arriveConfirmTitle,
+      t.arriveConfirmMessage(selectedGoal?.nameZh ?? t.mapGoal),
       [
-        { text: 'まだ', style: 'cancel' },
+        { text: t.notYet, style: 'cancel' },
         {
-          text: '到着した',
+          text: t.yesArrived,
           onPress: () => router.push('/summary'),
         },
       ],
     );
-  }, [selectedGoal]);
+  }, [selectedGoal, t]);
 
   // No plan state
   if (!dayPlan || !selectedGoal) {
     return (
       <View style={styles.emptyContainer}>
         <Text style={styles.emptyIcon}>🚴</Text>
-        <Text style={styles.emptyTitle}>プランが未選択です</Text>
+        <Text style={styles.emptyTitle}>{t.noPlanSelected}</Text>
         <TouchableOpacity
           style={styles.goBackButton}
           onPress={() => router.replace('/')}
           activeOpacity={0.7}
         >
-          <Text style={styles.goBackText}>ホームに戻る</Text>
+          <Text style={styles.goBackText}>{t.backToHome}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -234,7 +238,7 @@ export default function NextScreen() {
         <View style={styles.goalBar}>
           <Text style={styles.goalBarIcon}>🎯</Text>
           <View style={styles.goalBarContent}>
-            <Text style={styles.goalBarLabel}>本日のゴール</Text>
+            <Text style={styles.goalBarLabel}>{t.todayGoal}</Text>
             <Text style={styles.goalBarName}>
               {selectedGoal.nameZh} ({selectedGoal.name})
             </Text>
@@ -248,14 +252,14 @@ export default function NextScreen() {
         {hasPermission === false && (
           <View style={styles.gpsBanner}>
             <Text style={styles.gpsBannerText}>
-              📍 位置情報の権限がありません。設定から許可してください。
+              {t.locationPermissionMissing}
             </Text>
           </View>
         )}
         {isTracking && (
           <View style={styles.gpsActiveBanner}>
             <Text style={styles.gpsActiveText}>
-              📡 GPS追跡中 — {currentKm.toFixed(1)} km
+              {t.gpsTracking(currentKm.toFixed(1))}
             </Text>
           </View>
         )}
@@ -275,7 +279,7 @@ export default function NextScreen() {
           activeOpacity={0.7}
         >
           <Text style={styles.arriveButtonIcon}>🏁</Text>
-          <Text style={styles.arriveButtonText}>ゴール到着</Text>
+          <Text style={styles.arriveButtonText}>{t.arriveButton}</Text>
         </TouchableOpacity>
       </ScrollView>
 

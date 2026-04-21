@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 
 /**
  * Thin top banner shown on Web when navigator.onLine is false.
  * Native builds return null (iOS/Android handle offline via their own shells).
  */
 export default function OfflineBanner() {
+  const t = useT();
   const [online, setOnline] = useState(true);
 
   useEffect(() => {
@@ -28,7 +30,7 @@ export default function OfflineBanner() {
 
   return (
     <View style={styles.banner} pointerEvents="none">
-      <Text style={styles.text}>📡 オフライン — キャッシュ済みデータで表示中</Text>
+      <Text style={styles.text}>{t.offlineBanner}</Text>
     </View>
   );
 }

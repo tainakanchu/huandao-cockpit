@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 import type { GoalCandidate } from '@/lib/types';
 
 type Props = {
@@ -16,10 +17,10 @@ type Props = {
   highlightDistance?: number;
 };
 
-const tierLabels: Record<string, { label: string; color: string }> = {
-  major: { label: '主要', color: CyclingColors.primary },
-  mid: { label: '中間', color: CyclingColors.accent },
-  minor: { label: '小規模', color: CyclingColors.textSecondary },
+const tierColors: Record<string, string> = {
+  major: CyclingColors.primary,
+  mid: CyclingColors.accent,
+  minor: CyclingColors.textSecondary,
 };
 
 export default function GoalSelector({
@@ -28,12 +29,17 @@ export default function GoalSelector({
   onSelect,
   highlightDistance,
 }: Props) {
+  const t = useT();
+  const tierLabel = (tier: string): string =>
+    tier === 'major' ? t.tierMajor : tier === 'mid' ? t.tierMid : t.tierMinor;
+
   const renderItem = ({ item }: { item: GoalCandidate }) => {
     const distanceFromCurrent = item.kmFromStart - currentKm;
     const isHighlighted =
       highlightDistance !== undefined &&
       Math.abs(distanceFromCurrent - highlightDistance) <= 10;
-    const tier = tierLabels[item.tier] ?? tierLabels.minor;
+    const tierColor = tierColors[item.tier] ?? tierColors.minor;
+    const tier = { label: tierLabel(item.tier), color: tierColor };
 
     const noAccommodation = !item.hasAccommodation;
 
@@ -54,7 +60,7 @@ export default function GoalSelector({
           </View>
 
           {noAccommodation && (
-            <Text style={styles.noAccomWarning}>⚠️ 宿泊なし</Text>
+            <Text style={styles.noAccomWarning}>⚠️ {t.noAccommodation}</Text>
           )}
 
           <View style={styles.goalMeta}>

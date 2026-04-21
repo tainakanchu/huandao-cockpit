@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 
 type Props = {
   onSupplyDone: () => void;
@@ -22,28 +23,29 @@ export default function QuickActions({
   onNote,
   onChangeGoal,
 }: Props) {
+  const t = useT();
   const actions: ActionItem[] = [
     {
       icon: '🏪',
-      label: '補給済み',
+      label: t.supplyDone,
       onPress: onSupplyDone,
       color: CyclingColors.success,
     },
     {
       icon: '☕',
-      label: '休憩',
+      label: t.rest,
       onPress: onRest,
       color: CyclingColors.primary,
     },
     {
       icon: '📝',
-      label: '体調メモ',
+      label: t.conditionNote,
       onPress: onNote,
       color: CyclingColors.accent,
     },
     {
       icon: '🎯',
-      label: 'ゴール変更',
+      label: t.changeGoal,
       onPress: onChangeGoal,
       color: CyclingColors.critical,
     },

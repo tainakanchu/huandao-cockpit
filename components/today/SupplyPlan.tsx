@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 import type { SupplyPoint, CheckpointType } from '@/lib/types';
 
 type Props = {
@@ -20,11 +21,12 @@ const checkpointIcons: Record<CheckpointType, string> = {
   viewpoint: '📍',
 };
 
-const recommendationLabels: Record<string, { label: string; color: string }> = {
-  light: { label: '軽食', color: CyclingColors.success },
-  water: { label: '水分補給', color: CyclingColors.primary },
-  meal: { label: '食事', color: CyclingColors.accent },
-  final: { label: '最終補給', color: CyclingColors.critical },
+// Color map is fixed; labels come from i18n inside the component.
+const recommendationColors: Record<string, string> = {
+  light: CyclingColors.success,
+  water: CyclingColors.primary,
+  meal: CyclingColors.accent,
+  final: CyclingColors.critical,
 };
 
 function openInGoogleMaps(lat: number, lng: number, name: string) {
@@ -37,12 +39,23 @@ function openInGoogleMaps(lat: number, lng: number, name: string) {
 }
 
 export default function SupplyPlan({ supplyPoints }: Props) {
+  const t = useT();
+  const recLabel = (rec: string): string => {
+    switch (rec) {
+      case 'light': return t.supplyLight;
+      case 'water': return t.supplyWater;
+      case 'meal': return t.supplyMeal;
+      case 'final': return t.supplyFinal;
+      default: return rec;
+    }
+  };
+
   if (supplyPoints.length === 0) {
     return (
       <View style={styles.container}>
-        <Text style={styles.sectionTitle}>補給プラン</Text>
+        <Text style={styles.sectionTitle}>{t.supplyPlan}</Text>
         <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>補給ポイントデータなし</Text>
+          <Text style={styles.emptyText}>{t.noSupplyData}</Text>
         </View>
       </View>
     );
@@ -50,13 +63,15 @@ export default function SupplyPlan({ supplyPoints }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>補給プラン</Text>
+      <Text style={styles.sectionTitle}>{t.supplyPlan}</Text>
       <View style={styles.card}>
         {supplyPoints.map((sp, idx) => {
           const icon = checkpointIcons[sp.checkpoint.type] ?? '📍';
-          const rec = recommendationLabels[sp.recommended] ?? {
-            label: sp.recommended,
-            color: CyclingColors.textSecondary,
+          const rec = {
+            label: recLabel(sp.recommended),
+            color:
+              recommendationColors[sp.recommended] ??
+              CyclingColors.textSecondary,
           };
 
           return (
@@ -119,7 +134,7 @@ export default function SupplyPlan({ supplyPoints }: Props) {
                     activeOpacity={0.6}
                   >
                     <Text style={styles.restaurantLinkText}>
-                      🍽️ 周辺のレストランを探す
+                      {t.findRestaurantsNearby}
                     </Text>
                   </TouchableOpacity>
                 )}

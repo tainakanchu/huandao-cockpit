@@ -104,7 +104,7 @@ export default function HistoryScreen() {
               <Text style={styles.progressStatValue}>
                 {progress.completedRides}
               </Text>
-              <Text style={styles.progressStatLabel}>回</Text>
+              <Text style={styles.progressStatLabel}>{t.rideCountUnit}</Text>
             </View>
             <View style={styles.progressStat}>
               <Text style={styles.progressStatValue}>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
+import { useT } from '@/lib/i18n';
 import type { AdvisoryCard } from '@/lib/types';
 
 type Props = {
@@ -18,6 +19,7 @@ const typeIcons: Record<string, string> = {
 };
 
 export default function AdvisoryCards({ cards }: Props) {
+  const t = useT();
   if (cards.length === 0) return null;
 
   // Show up to 3 cards, sorted by priority
@@ -25,7 +27,7 @@ export default function AdvisoryCards({ cards }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>注意事項</Text>
+      <Text style={styles.sectionTitle}>{t.advisoryTitle}</Text>
       {sorted.map((card) => {
         const severityColor = CyclingColors.severity[card.severity];
         const severityBg =

@@ -11,6 +11,7 @@ import type {
   SupplyRecommendation,
   RideStatus,
 } from "@/lib/types";
+import translations, { type Locale } from "@/lib/i18n/translations";
 
 /** Checkpoint types that count as supply points */
 const SUPPLY_TYPES = new Set([
@@ -227,8 +228,10 @@ export function generateSupplyPlan(
   checkpoints: Checkpoint[],
   startKm: number,
   endKm: number,
-  goals?: GoalCandidate[]
+  goals?: GoalCandidate[],
+  locale: Locale = 'ja',
 ): SupplyPoint[] {
+  const t = translations[locale];
   const dayDistance = endKm - startKm;
 
   // Filter and sort supply checkpoints for this day
@@ -329,29 +332,31 @@ export function generateSupplyPlan(
 
     if (idx === daySupply.length - 1) {
       recommended = "final";
-      reason = "本日最後の補給ポイント。水と食料を十分に補充してください。";
+      reason = t.supplyReasonFinal;
     } else if (finalBeforeGapKms.has(cp.kmFromStart)) {
       recommended = "final";
       const gap = gaps.find((g) => g.startKm === cp.kmFromStart);
-      reason = `${gap?.distanceKm.toFixed(0)} km の補給空白区間の前。十分に補充してください。`;
+      reason = t.supplyReasonBeforeGap(
+        Number((gap?.distanceKm ?? 0).toFixed(0)),
+      );
     } else if (idx === mealIdx) {
       recommended = "meal";
       reason = mealTown
-        ? `${mealTown.nameZh}付近。町で食事休憩に最適。`
-        : "本日の中間地点付近。食事休憩に最適。";
+        ? t.supplyReasonMealInTown(mealTown.nameZh)
+        : t.supplyReasonMealMidpoint;
     } else if (cp.type === "water") {
       recommended = "water";
-      reason = "水の補充ポイント。";
+      reason = t.supplyReasonWaterRefill;
     } else {
-      // Find distance to next selected point
       const nextSelectedIdx = selectedIndices.find((si) => si > idx);
       if (nextSelectedIdx !== undefined) {
-        const distToNext = daySupply[nextSelectedIdx].kmFromStart - cp.kmFromStart;
+        const distToNext =
+          daySupply[nextSelectedIdx].kmFromStart - cp.kmFromStart;
         recommended = "water";
-        reason = `次の補給まで ${distToNext.toFixed(0)} km。水を補充してください。`;
+        reason = t.supplyReasonWaterGap(Number(distToNext.toFixed(0)));
       } else {
         recommended = "light";
-        reason = "任意の軽い立ち寄り。";
+        reason = t.supplyReasonLightStop;
       }
     }
 

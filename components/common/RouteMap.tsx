@@ -17,6 +17,7 @@ import {
 } from '@/lib/data/route';
 import { haversineDistance } from '@/lib/geo/distance';
 import { useWaypointStore } from '@/lib/store/waypointStore';
+import { useT } from '@/lib/i18n';
 import type { WaypointCategory } from '@/lib/types';
 import taiwanOutlineData from '@/assets/data/taiwan-outline.json';
 
@@ -88,6 +89,7 @@ export default function RouteMap({
   height = 180,
   title,
 }: Props) {
+  const t = useT();
   const waypoints = useWaypointStore((s) => s.waypoints);
 
   const coords = useMemo(() => getRouteCoordinates(), []);
@@ -216,7 +218,7 @@ export default function RouteMap({
   return (
     <View style={[styles.card, { height: height + (title === null ? 16 : 40) }]}>
       {title !== null && (
-        <Text style={styles.title}>{title ?? '🗺️ ルート'}</Text>
+        <Text style={styles.title}>{title ?? t.mapDefaultTitle}</Text>
       )}
       <View style={[styles.mapBox, { height }]}>
         <Svg
@@ -333,7 +335,7 @@ export default function RouteMap({
               <LabelWithHalo
                 x={startMarker.x < canvasW * 0.7 ? startMarker.x + 8 : startMarker.x - 8}
                 y={startMarker.y + 3}
-                text="スタート"
+                text={t.mapStart}
                 anchor={startMarker.x < canvasW * 0.7 ? 'start' : 'end'}
                 fontSize={9}
                 color={CyclingColors.textPrimary}
@@ -353,7 +355,7 @@ export default function RouteMap({
               <LabelWithHalo
                 x={endMarker.x < canvasW * 0.7 ? endMarker.x + 10 : endMarker.x - 10}
                 y={endMarker.y + 3}
-                text="ゴール"
+                text={t.mapGoal}
                 anchor={endMarker.x < canvasW * 0.7 ? 'start' : 'end'}
                 fontSize={10}
                 color={CyclingColors.accent}
@@ -386,14 +388,18 @@ export default function RouteMap({
 
       {title !== null && (
         <Text style={styles.hint}>
-          <Text style={{ color: CyclingColors.supply.water }}>━</Text> 環島一號線
+          <Text style={{ color: CyclingColors.supply.water }}>━</Text>{' '}
+          {t.mapLegendHuandao}
           {mode === 'day' ? (
             <>
               {'  ·  '}
-              <Text style={{ color: CyclingColors.accent }}>━</Text> 今日の区間
+              <Text style={{ color: CyclingColors.accent }}>━</Text>{' '}
+              {t.mapLegendToday}
             </>
           ) : null}
-          {waypointsInRange.length > 0 ? `  ·  ● 経由地 ${waypointsInRange.length}` : ''}
+          {waypointsInRange.length > 0
+            ? `  ·  ${t.mapLegendWaypoints(waypointsInRange.length)}`
+            : ''}
         </Text>
       )}
     </View>
