@@ -18,6 +18,12 @@ import AdvisoryCards from '@/components/today/AdvisoryCards';
 import SupplyPlan from '@/components/today/SupplyPlan';
 import DayWaypointSection from '@/components/today/DayWaypointSection';
 import RouteMap from '@/components/common/RouteMap';
+import {
+  buildGoogleMapsDirectionsUrl,
+  GOOGLE_MAPS_WAYPOINT_LIMIT,
+} from '@/lib/logic/mapsUrl';
+import { getCoordinateAtKm } from '@/lib/data/route';
+import { useWaypointStore } from '@/lib/store/waypointStore';
 import RiskBar from '@/components/today/RiskBar';
 import ElevationChart from '@/components/today/ElevationChart';
 import { getRouteElevationProfile } from '@/lib/data/route';
@@ -33,6 +39,34 @@ export default function TodayScreen() {
   const difficultyLevel = usePlanStore((s) => s.difficultyLevel);
   const riskSummary = usePlanStore((s) => s.riskSummary);
   const isLoading = usePlanStore((s) => s.isLoading);
+  const waypoints = useWaypointStore((s) => s.waypoints);
+
+  const handleOpenGoogleMaps = useCallback(() => {
+    if (!dayPlan) return;
+    const origin = getCoordinateAtKm(dayPlan.startKm);
+    const destination = getCoordinateAtKm(dayPlan.endKm);
+    if (!origin || !destination) return;
+
+    const dayWaypoints = waypoints
+      .filter(
+        (w) =>
+          w.kmFromStart > dayPlan.startKm + 0.5 &&
+          w.kmFromStart < dayPlan.endKm - 0.5,
+      )
+      .slice(0, GOOGLE_MAPS_WAYPOINT_LIMIT)
+      .map((w) => ({ lat: w.lat, lng: w.lng }));
+
+    const url = buildGoogleMapsDirectionsUrl({
+      origin,
+      destination,
+      waypoints: dayWaypoints,
+      travelMode: 'bicycling',
+    });
+
+    Linking.openURL(url).catch((err) =>
+      console.warn('Failed to open Google Maps:', err),
+    );
+  }, [dayPlan, waypoints]);
 
   // Default risk summary if none calculated
   const displayRisks: RiskSummary = useMemo(() => {
@@ -118,6 +152,17 @@ export default function TodayScreen() {
           highlightEndKm={dayPlan.endKm}
           title="🗺️ 今日のルート"
         />
+
+        {/* B1b. Launch external nav */}
+        <TouchableOpacity
+          style={styles.gmapsButton}
+          onPress={handleOpenGoogleMaps}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.gmapsButtonText}>
+            🧭 Google Maps でナビを開く
+          </Text>
+        </TouchableOpacity>
 
         {/* B2. Today's waypoints */}
         <DayWaypointSection
@@ -324,6 +369,21 @@ const styles = StyleSheet.create({
     color: CyclingColors.white,
     fontSize: 16,
     fontWeight: '700',
+  },
+  gmapsButton: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    paddingVertical: 11,
+    borderRadius: 12,
+    backgroundColor: CyclingColors.card,
+    borderWidth: 1.5,
+    borderColor: CyclingColors.primary,
+    alignItems: 'center',
+  },
+  gmapsButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: CyclingColors.primary,
   },
   ctaContainer: {
     marginHorizontal: 16,
