@@ -28,6 +28,8 @@ type PlanState = {
   dayPlan: DayPlan | null;
   sunTimes: SunTimes | null;
   isLoading: boolean;
+  /** Target ride date (local). Used to pick which day's weather / sun data to display. */
+  rideDate: Date;
 
   // Preserved from existing store for backward compatibility
   difficultyLevel: DifficultyLevel;
@@ -38,6 +40,7 @@ type PlanState = {
   setDayNumber: (day: number) => void;
   selectGoal: (goal: GoalCandidate) => Promise<void>;
   refreshWeather: () => Promise<void>;
+  setRideDate: (date: Date) => Promise<void>;
   resetDay: () => void;
   advanceDay: () => void;
 
@@ -53,6 +56,13 @@ type PlanState = {
   setHasHydrated: (v: boolean) => void;
 };
 
+
+/** Returns a Date at local midnight of today. */
+function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
 
 /**
  * ルート上の代表的な座標を生成する（始点と終点の間を線形補間）。
@@ -86,6 +96,7 @@ export const usePlanStore = create<PlanState>()(
   dayPlan: null,
   sunTimes: null,
   isLoading: false,
+  rideDate: startOfToday(),
   difficultyLevel: 'Easy',
   riskSummary: null,
   _hasHydrated: false,
@@ -100,7 +111,7 @@ export const usePlanStore = create<PlanState>()(
   },
 
   selectGoal: async (goal: GoalCandidate) => {
-    const { currentKm, dayNumber } = get();
+    const { currentKm, dayNumber, rideDate } = get();
 
     set({ selectedGoal: goal, isLoading: true });
 
@@ -129,7 +140,9 @@ export const usePlanStore = create<PlanState>()(
           3
         );
 
-        const weatherResult = await fetchRouteWeather(routePoints);
+        const weatherResult = await fetchRouteWeather(routePoints, {
+          targetDate: rideDate,
+        });
 
         dayPlan = {
           ...dayPlan,
@@ -159,7 +172,7 @@ export const usePlanStore = create<PlanState>()(
   },
 
   refreshWeather: async () => {
-    const { dayPlan, selectedGoal, currentKm } = get();
+    const { dayPlan, selectedGoal, rideDate } = get();
 
     if (!dayPlan || !selectedGoal) {
       console.warn('[planStore] refreshWeather: no dayPlan or selectedGoal');
@@ -177,7 +190,9 @@ export const usePlanStore = create<PlanState>()(
         3
       );
 
-      const weatherResult = await fetchRouteWeather(routePoints);
+      const weatherResult = await fetchRouteWeather(routePoints, {
+        targetDate: rideDate,
+      });
       let updatedPlan: DayPlan = {
         ...dayPlan,
         weather: weatherResult.segments,
@@ -219,7 +234,19 @@ export const usePlanStore = create<PlanState>()(
       dayPlan: null,
       sunTimes: null,
       isLoading: false,
+      rideDate: startOfToday(),
     });
+  },
+
+  setRideDate: async (date: Date) => {
+    const normalized = new Date(date);
+    normalized.setHours(0, 0, 0, 0);
+    set({ rideDate: normalized });
+    // Re-fetch weather for the newly chosen date if a goal is already selected.
+    const { selectedGoal, refreshWeather } = get();
+    if (selectedGoal) {
+      await refreshWeather();
+    }
   },
 
   // Backward-compatible setters

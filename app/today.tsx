@@ -18,6 +18,7 @@ import AdvisoryCards from '@/components/today/AdvisoryCards';
 import SupplyPlan from '@/components/today/SupplyPlan';
 import DayWaypointSection from '@/components/today/DayWaypointSection';
 import RouteMap from '@/components/common/RouteMap';
+import RideDateChips from '@/components/today/RideDateChips';
 import {
   buildGoogleMapsDirectionsUrl,
   GOOGLE_MAPS_WAYPOINT_LIMIT,
@@ -139,6 +140,9 @@ export default function TodayScreen() {
           endName={endName}
           difficultyLevel={difficultyLevel}
         />
+
+        {/* A2. Ride date chips */}
+        <RideDateChips />
 
         {/* B. Summary Card */}
         <SummaryCard plan={dayPlan} sunTimes={sunTimes ?? undefined} />

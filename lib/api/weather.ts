@@ -62,19 +62,41 @@ async function fetchOpenMeteo(
   return response.json() as Promise<OpenMeteoHourlyResponse>;
 }
 
+/** YYYY-MM-DD in Asia/Taipei local date (no tz conversion needed since Open-Meteo
+ *  returns times in the timezone we requested). */
+function dateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** Days between today and target (both at local midnight). */
+function daysFromToday(target: Date): number {
+  const a = new Date();
+  a.setHours(0, 0, 0, 0);
+  const b = new Date(target);
+  b.setHours(0, 0, 0, 0);
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
 /**
  * Open-Meteo のレスポンスを WeatherSegment[] に変換する。
+ * targetDateKey が指定されたら、その日付 (YYYY-MM-DD) の hourly のみ残す。
  */
 function parseHourlySegments(
   data: OpenMeteoHourlyResponse,
   lat: number,
-  lng: number
+  lng: number,
+  targetDateKey?: string,
 ): WeatherSegment[] {
   const { hourly } = data;
   const segments: WeatherSegment[] = [];
 
   for (let i = 0; i < hourly.time.length; i++) {
-    const date = new Date(hourly.time[i]);
+    const timeStr = hourly.time[i];
+    if (targetDateKey && !timeStr.startsWith(targetDateKey)) continue;
+    const date = new Date(timeStr);
     segments.push({
       hour: date.getHours(),
       lat,
@@ -93,12 +115,23 @@ function parseHourlySegments(
 }
 
 /**
- * Open-Meteo のレスポンスから SunTimes を取得する（初日のデータを使用）。
+ * Open-Meteo のレスポンスから SunTimes を取得する。
+ * targetDateKey が指定されたらその日付のデータを探す、なければ初日。
  */
-function parseSunTimes(data: OpenMeteoHourlyResponse): SunTimes {
+function parseSunTimes(
+  data: OpenMeteoHourlyResponse,
+  targetDateKey?: string,
+): SunTimes {
+  let idx = 0;
+  if (targetDateKey) {
+    const found = data.daily.sunrise.findIndex((s) =>
+      s.startsWith(targetDateKey),
+    );
+    if (found >= 0) idx = found;
+  }
   return {
-    sunrise: new Date(data.daily.sunrise[0]),
-    sunset: new Date(data.daily.sunset[0]),
+    sunrise: new Date(data.daily.sunrise[idx]),
+    sunset: new Date(data.daily.sunset[idx]),
   };
 }
 
@@ -126,22 +159,31 @@ export async function fetchWeather(
   }
 }
 
+export type FetchRouteWeatherOpts = {
+  /** Target ride date. When set, only that day's hourly segments and sun times are returned. */
+  targetDate?: Date;
+  /** Override the number of forecast days requested. Auto-derived from targetDate when omitted. */
+  forecastDays?: number;
+};
+
 /**
  * ルート上の複数地点の天気を取得し、統合する。
  *
  * Open-Meteo は 1 リクエスト 1 地点なので、代表的な地点（始点・中間・終点など）
  * をサンプリングして取得し、各時間帯ごとに最も近い地点のデータを割り当てる。
- *
- * @param points       ルート上の座標リスト
- * @param forecastDays 予報日数（デフォルト 2）
  */
 export async function fetchRouteWeather(
   points: { lat: number; lng: number }[],
-  forecastDays: number = 2
+  opts: FetchRouteWeatherOpts = {},
 ): Promise<{ segments: WeatherSegment[]; sun: SunTimes }> {
   if (points.length === 0) {
     throw new Error('[weather] fetchRouteWeather: points array is empty');
   }
+
+  const targetDateKey = opts.targetDate ? dateKey(opts.targetDate) : undefined;
+  // If a target date is N days ahead, request N+2 days to ensure coverage.
+  const offset = opts.targetDate ? Math.max(0, daysFromToday(opts.targetDate)) : 0;
+  const forecastDays = opts.forecastDays ?? Math.max(2, offset + 2);
 
   // 少数の代表点をサンプリングしてAPIコールを抑える
   // 最大5地点: 始点、1/4、中間、3/4、終点
@@ -154,8 +196,8 @@ export async function fetchRouteWeather(
       samplePoints.map((p) => fetchOpenMeteo(p.lat, p.lng, forecastDays))
     );
 
-    // 最初の結果から SunTimes を取得（台湾内では大きな差はない）
-    const sun = parseSunTimes(results[0]);
+    // SunTimes: 対象日のデータを使う（なければ初日）
+    const sun = parseSunTimes(results[0], targetDateKey);
 
     // 各サンプル地点の hourly データを WeatherSegment に変換
     const allSegments: WeatherSegment[] = [];
@@ -163,7 +205,8 @@ export async function fetchRouteWeather(
       const segments = parseHourlySegments(
         results[i],
         samplePoints[i].lat,
-        samplePoints[i].lng
+        samplePoints[i].lng,
+        targetDateKey,
       );
       allSegments.push(...segments);
     }
