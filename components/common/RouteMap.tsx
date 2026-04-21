@@ -217,32 +217,33 @@ export default function RouteMap({
           <Path
             d={taiwanPath}
             fill={CyclingColors.primaryLight}
-            fillOpacity={0.55}
+            fillOpacity={0.45}
             stroke={CyclingColors.textLight}
-            strokeWidth={0.8}
-            strokeOpacity={0.7}
+            strokeWidth={0.6}
+            strokeOpacity={0.5}
           />
 
-          {/* Base (or day segment) route line */}
+          {/* Base (or day segment) route line — red for visibility over green fill */}
           <Path
             d={fullPath}
             stroke={
               mode === 'full'
-                ? CyclingColors.textLight
+                ? CyclingColors.accent
                 : CyclingColors.primaryDark
             }
-            strokeWidth={mode === 'full' ? 1.2 : 2.2}
+            strokeWidth={mode === 'full' ? 1.8 : 2.4}
             fill="none"
             strokeLinecap="round"
             strokeLinejoin="round"
+            opacity={mode === 'full' ? 0.85 : 1}
           />
 
           {/* Highlighted day segment overlay (only when mode=full) */}
           {highlightPath && (
             <Path
               d={highlightPath}
-              stroke={CyclingColors.primary}
-              strokeWidth={2.6}
+              stroke={CyclingColors.primaryDark}
+              strokeWidth={3.2}
               fill="none"
               strokeLinecap="round"
               strokeLinejoin="round"
