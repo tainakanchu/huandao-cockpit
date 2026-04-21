@@ -70,32 +70,10 @@ export default function SummaryCard({ plan, sunTimes }: Props) {
     foodWaypointCount,
   });
 
-  // Calculate ETA from 7:00 start using TOTAL time (moving + stops)
-  const startTime = new Date();
-  startTime.setHours(7, 0, 0, 0);
-  const eta = new Date(
-    startTime.getTime() + estimate.totalHours * 60 * 60 * 1000,
-  );
-
-  // Sunset margin
-  let sunsetMargin = '--';
-  if (sunTimes) {
-    const sunsetMs = sunTimes.sunset.getTime();
-    const etaMs = eta.getTime();
-    const marginMin = Math.round((sunsetMs - etaMs) / (1000 * 60));
-    if (marginMin >= 0) {
-      const marginH = Math.floor(marginMin / 60);
-      const marginM = marginMin % 60;
-      sunsetMargin = `+${marginH}h${marginM.toString().padStart(2, '0')}m`;
-    } else {
-      const absMin = Math.abs(marginMin);
-      const marginH = Math.floor(absMin / 60);
-      const marginM = absMin % 60;
-      sunsetMargin = `-${marginH}h${marginM.toString().padStart(2, '0')}m`;
-    }
-  }
-
   const weatherSummary = getWeatherSummary(plan);
+
+  const sunrise = sunTimes ? formatTime(sunTimes.sunrise) : '--:--';
+  const sunset = sunTimes ? formatTime(sunTimes.sunset) : '--:--';
 
   const metrics = [
     { icon: '🚴', label: '距離', value: `${plan.distanceKm.toFixed(1)} km` },
@@ -111,8 +89,8 @@ export default function SummaryCard({ plan, sunTimes }: Props) {
       value: formatHM(estimate.totalHours),
       sub: `+休憩 ${Math.round(estimate.stopHours * 60)}分`,
     },
-    { icon: '🏁', label: 'ETA', value: formatTime(eta) },
-    { icon: '🌅', label: '日没余裕', value: sunsetMargin },
+    { icon: '🌄', label: '日の出', value: sunrise },
+    { icon: '🌇', label: '日没', value: sunset },
     { icon: '🌡️', label: '気温', value: weatherSummary.tempRange },
     { icon: '💨', label: '風速', value: weatherSummary.windInfo },
     { icon: '🌧️', label: '降水確率', value: weatherSummary.precipitation },
