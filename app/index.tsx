@@ -16,6 +16,7 @@ import { getGoalCandidates, getNearestAccommodationGoal } from '@/lib/data/goals
 import GoalSelector from '@/components/home/GoalSelector';
 import DistanceQuickPick from '@/components/home/DistanceQuickPick';
 import PositionAdjuster from '@/components/home/PositionAdjuster';
+import RouteMap from '@/components/common/RouteMap';
 import { useT } from '@/lib/i18n';
 import type { GoalCandidate } from '@/lib/types';
 
@@ -156,6 +157,20 @@ export default function HomeScreen() {
         currentKm={currentKm}
         onSetPosition={handleSetPosition}
         onClose={() => setPositionModalVisible(false)}
+      />
+
+      {/* Route map overview */}
+      <RouteMap
+        mode="full"
+        currentKm={currentKm}
+        highlightStartKm={
+          (tripPlan && getCurrentDaySlot(dayNumber)?.startKm) || undefined
+        }
+        highlightEndKm={
+          (tripPlan && getCurrentDaySlot(dayNumber)?.endKm) || undefined
+        }
+        title={null}
+        height={140}
       />
 
       {/* Trip Plan & History Buttons */}

@@ -17,6 +17,7 @@ import SummaryCard from '@/components/today/SummaryCard';
 import AdvisoryCards from '@/components/today/AdvisoryCards';
 import SupplyPlan from '@/components/today/SupplyPlan';
 import DayWaypointSection from '@/components/today/DayWaypointSection';
+import RouteMap from '@/components/common/RouteMap';
 import RiskBar from '@/components/today/RiskBar';
 import ElevationChart from '@/components/today/ElevationChart';
 import { getRouteElevationProfile } from '@/lib/data/route';
@@ -109,6 +110,14 @@ export default function TodayScreen() {
 
         {/* B. Summary Card */}
         <SummaryCard plan={dayPlan} sunTimes={sunTimes ?? undefined} />
+
+        {/* B1. Route map (day segment) */}
+        <RouteMap
+          mode="day"
+          highlightStartKm={dayPlan.startKm}
+          highlightEndKm={dayPlan.endKm}
+          title="🗺️ 今日のルート"
+        />
 
         {/* B2. Today's waypoints */}
         <DayWaypointSection
