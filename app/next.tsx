@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,8 @@ import {
   StyleSheet,
   Alert,
   BackHandler,
+  Platform,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -38,12 +40,44 @@ export default function NextScreen() {
 
   const [alertCard, setAlertCard] = useState<AdvisoryCard | null>(null);
   const [alertVisible, setAlertVisible] = useState(false);
+  const [exitConfirm, setExitConfirm] = useState(false);
+  const isExitingIntentionallyRef = useRef(false);
 
-  // Androidバックボタン無効化（走行中は誤操作防止）
+  // Androidバックボタン: ハードウェア戻るで退出しないよう確認ダイアログを表示
   useEffect(() => {
-    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setExitConfirm(true);
+      return true; // consume
+    });
     return () => sub.remove();
   }, []);
+
+  // Web: popstate (ブラウザ戻る/スワイプバック) をトラップ
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    if (typeof window === 'undefined') return;
+
+    // 退出 trap を仕掛ける: ダミー history entry を push
+    window.history.pushState({ rideTrap: true }, '');
+
+    const onPopState = () => {
+      if (isExitingIntentionallyRef.current) return;
+      // 戻るを押された → trap を再設置して確認モーダル表示
+      window.history.pushState({ rideTrap: true }, '');
+      setExitConfirm(true);
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => {
+      window.removeEventListener('popstate', onPopState);
+    };
+  }, []);
+
+  const confirmExit = () => {
+    isExitingIntentionallyRef.current = true;
+    setExitConfirm(false);
+    router.replace('/');
+  };
 
   // GPS追跡を開始（走行中のみ）
   const { hasPermission, isTracking } = useLocationTracking(isRiding);
@@ -293,6 +327,41 @@ export default function NextScreen() {
           router.replace('/');
         }}
       />
+
+      {/* Exit confirmation (web back-button / Android hardware back) */}
+      <Modal
+        visible={exitConfirm}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setExitConfirm(false)}
+      >
+        <View style={styles.exitBackdrop}>
+          <View style={styles.exitCard}>
+            <Text style={styles.exitTitle}>{t.exitRideTitle}</Text>
+            <Text style={styles.exitBody}>{t.exitRideMessage}</Text>
+            <View style={styles.exitActions}>
+              <TouchableOpacity
+                style={[styles.exitBtn, styles.exitBtnKeep]}
+                onPress={() => setExitConfirm(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.exitBtnKeepText}>
+                  {t.exitRideKeepRiding}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.exitBtn, styles.exitBtnConfirm]}
+                onPress={confirmExit}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.exitBtnConfirmText}>
+                  {t.exitRideConfirm}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -448,5 +517,60 @@ const styles = StyleSheet.create({
     color: CyclingColors.white,
     fontSize: 18,
     fontWeight: '800',
+  },
+
+  // Exit confirmation dialog
+  exitBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  exitCard: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: CyclingColors.card,
+    borderRadius: 16,
+    padding: 22,
+  },
+  exitTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: CyclingColors.textPrimary,
+    marginBottom: 8,
+  },
+  exitBody: {
+    fontSize: 13,
+    color: CyclingColors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 18,
+  },
+  exitActions: {
+    flexDirection: 'column',
+    gap: 8,
+  },
+  exitBtn: {
+    paddingVertical: 13,
+    borderRadius: 11,
+    alignItems: 'center',
+  },
+  exitBtnKeep: {
+    backgroundColor: CyclingColors.primary,
+  },
+  exitBtnKeepText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: CyclingColors.white,
+  },
+  exitBtnConfirm: {
+    backgroundColor: CyclingColors.background,
+    borderWidth: 1,
+    borderColor: CyclingColors.critical,
+  },
+  exitBtnConfirmText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: CyclingColors.critical,
   },
 });

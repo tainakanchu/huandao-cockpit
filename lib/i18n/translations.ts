@@ -69,6 +69,14 @@ const ja = {
   current: '現在',
   enterKm: 'km を入力...',
   startPointName: '台北/松山（出発点）',
+  useGps: '📍 GPSで現在地を取得',
+  gpsLocating: 'GPS取得中...',
+  gpsPermissionDenied: 'GPS位置情報の権限がありません。設定アプリから許可してください。',
+  gpsTimeout: 'GPS取得に時間がかかっています。屋外で再試行してください。',
+  gpsOffRoute: (km: number) =>
+    `ルートから約 ${km}km 離れた場所にいます。最寄りの KP を現在位置として設定しますか？`,
+  gpsOffRouteConfirm: '設定する',
+  gpsSet: (km: number) => `現在位置を KP ${km}km に設定しました`,
 
   // Today screen
   preparingPlan: 'プランを準備中...',
@@ -220,6 +228,10 @@ const ja = {
   changeGoalConfirmTitle: 'ゴール変更',
   changeGoalConfirmMessage: '走行を中断してゴールを変更しますか？',
   changeConfirm: '変更する',
+  exitRideTitle: '走行を中断しますか？',
+  exitRideMessage: '走行中です。ホームに戻ると現在の走行セッションが終了します。',
+  exitRideConfirm: '中断して戻る',
+  exitRideKeepRiding: '走行を続ける',
 
   // Checkpoint types (display)
   cpSevenEleven: 'セブンイレブン',
@@ -412,6 +424,14 @@ const zhTW: typeof ja = {
   current: '目前',
   enterKm: '輸入 km...',
   startPointName: '台北/松山（起點）',
+  useGps: '📍 以 GPS 取得目前位置',
+  gpsLocating: '定位中...',
+  gpsPermissionDenied: '未取得 GPS 位置權限。請到設定中允許。',
+  gpsTimeout: '定位花費時間較久，請在室外重試。',
+  gpsOffRoute: (km: number) =>
+    `目前位置距路線約 ${km}km。要將最近的 KP 設為目前位置嗎？`,
+  gpsOffRouteConfirm: '設定',
+  gpsSet: (km: number) => `已將目前位置設為 KP ${km}km`,
 
   preparingPlan: '準備行程中...',
   noPlanSelected: '尚未選擇行程',
@@ -549,6 +569,10 @@ const zhTW: typeof ja = {
   changeGoalConfirmTitle: '變更目的地',
   changeGoalConfirmMessage: '要中斷騎行並變更目的地嗎？',
   changeConfirm: '變更',
+  exitRideTitle: '要中斷騎行嗎？',
+  exitRideMessage: '目前正在騎行中。返回首頁會結束此次騎行。',
+  exitRideConfirm: '中斷並返回',
+  exitRideKeepRiding: '繼續騎行',
 
   cpSevenEleven: '7-Eleven',
   cpFamilyMart: '全家',

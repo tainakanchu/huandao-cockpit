@@ -9,10 +9,15 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { CyclingColors } from '@/constants/Colors';
 import { getGoalCandidates } from '@/lib/data/goals';
 import { useT } from '@/lib/i18n';
+import {
+  detectCurrentPosition,
+  PermissionDeniedError,
+} from '@/lib/logic/detectCurrentPosition';
 import type { GoalCandidate } from '@/lib/types';
 
 type Props = {
@@ -36,6 +41,31 @@ export default function PositionAdjuster({
 }: Props) {
   const t = useT();
   const [manualKm, setManualKm] = useState('');
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [gpsError, setGpsError] = useState<string | null>(null);
+  const [gpsConfirm, setGpsConfirm] = useState<{ km: number; detourKm: number } | null>(null);
+
+  const handleUseGps = async () => {
+    setGpsLoading(true);
+    setGpsError(null);
+    try {
+      const result = await detectCurrentPosition();
+      const roundedKm = Math.round(result.km * 10) / 10;
+      if (result.detourKm > 5) {
+        setGpsConfirm({ km: roundedKm, detourKm: Math.round(result.detourKm) });
+      } else {
+        onSetPosition(roundedKm);
+      }
+    } catch (err) {
+      if (err instanceof PermissionDeniedError) {
+        setGpsError(t.gpsPermissionDenied);
+      } else {
+        setGpsError((err as Error).message || t.gpsTimeout);
+      }
+    } finally {
+      setGpsLoading(false);
+    }
+  };
 
   const tierLabel = (tier: string): string =>
     tier === 'major' ? t.tierMajor : tier === 'mid' ? t.tierMid : t.tierMinor;
@@ -109,6 +139,36 @@ export default function PositionAdjuster({
                 {t.current}: {currentKm} km
               </Text>
             </View>
+
+            {/* GPS button */}
+            <TouchableOpacity
+              style={[
+                styles.gpsButton,
+                gpsLoading && styles.gpsButtonLoading,
+              ]}
+              onPress={handleUseGps}
+              disabled={gpsLoading}
+              activeOpacity={0.7}
+            >
+              {gpsLoading ? (
+                <>
+                  <ActivityIndicator
+                    size="small"
+                    color={CyclingColors.white}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text style={styles.gpsButtonText}>{t.gpsLocating}</Text>
+                </>
+              ) : (
+                <Text style={styles.gpsButtonText}>{t.useGps}</Text>
+              )}
+            </TouchableOpacity>
+
+            {gpsError && (
+              <View style={styles.gpsErrorBox}>
+                <Text style={styles.gpsErrorText}>{gpsError}</Text>
+              </View>
+            )}
 
             {/* Goal list */}
             <ScrollView
@@ -217,6 +277,46 @@ export default function PositionAdjuster({
           </View>
         </KeyboardAvoidingView>
       </View>
+
+      {/* GPS off-route confirm modal */}
+      <Modal
+        visible={gpsConfirm !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setGpsConfirm(null)}
+      >
+        <View style={styles.confirmBackdrop}>
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>📍 GPS</Text>
+            {gpsConfirm && (
+              <Text style={styles.confirmBody}>
+                {t.gpsOffRoute(gpsConfirm.detourKm)}
+              </Text>
+            )}
+            <View style={styles.confirmActions}>
+              <TouchableOpacity
+                style={[styles.confirmBtn, styles.confirmBtnCancel]}
+                onPress={() => setGpsConfirm(null)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.confirmBtnCancelText}>{t.cancel}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmBtn, styles.confirmBtnOk]}
+                onPress={() => {
+                  if (gpsConfirm) onSetPosition(gpsConfirm.km);
+                  setGpsConfirm(null);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.confirmBtnOkText}>
+                  {t.gpsOffRouteConfirm}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 }
@@ -371,5 +471,91 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: CyclingColors.textSecondary,
+  },
+
+  // GPS button
+  gpsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    height: 46,
+    borderRadius: 12,
+    backgroundColor: CyclingColors.primary,
+  },
+  gpsButtonLoading: {
+    backgroundColor: CyclingColors.primaryDark,
+  },
+  gpsButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: CyclingColors.white,
+  },
+  gpsErrorBox: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    padding: 10,
+    backgroundColor: CyclingColors.severity.criticalBg,
+    borderRadius: 10,
+  },
+  gpsErrorText: {
+    fontSize: 12,
+    color: CyclingColors.severity.critical,
+  },
+
+  // GPS off-route confirm
+  confirmBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 340,
+    backgroundColor: CyclingColors.card,
+    borderRadius: 16,
+    padding: 20,
+  },
+  confirmTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: CyclingColors.textPrimary,
+    marginBottom: 6,
+  },
+  confirmBody: {
+    fontSize: 13,
+    color: CyclingColors.textSecondary,
+    marginBottom: 16,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  confirmBtnCancel: {
+    backgroundColor: CyclingColors.background,
+    borderWidth: 1,
+    borderColor: CyclingColors.cardBorder,
+  },
+  confirmBtnCancelText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: CyclingColors.textSecondary,
+  },
+  confirmBtnOk: {
+    backgroundColor: CyclingColors.primary,
+  },
+  confirmBtnOkText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: CyclingColors.white,
   },
 });
