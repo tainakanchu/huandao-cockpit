@@ -73,9 +73,12 @@ const ja = {
   gpsLocating: 'GPS取得中...',
   gpsPermissionDenied: 'GPS位置情報の権限がありません。設定アプリから許可してください。',
   gpsTimeout: 'GPS取得に時間がかかっています。屋外で再試行してください。',
-  gpsOffRoute: (km: number) =>
-    `ルートから約 ${km}km 離れた場所にいます。最寄りの KP を現在位置として設定しますか？`,
-  gpsOffRouteConfirm: '設定する',
+  gpsSnapTitle: '📍 GPSで現在地を取得しました',
+  gpsSnapOnRoute: (km: number, nearest: string) =>
+    `ルート上の KP ${km}km (${nearest}付近) にスナップします。`,
+  gpsSnapOffRoute: (km: number, nearest: string, detourKm: number) =>
+    `GPS位置はルートから約 ${detourKm}km 離れています。最寄りの KP ${km}km (${nearest}付近) に現在位置を設定しますか？`,
+  gpsSetConfirm: '設定する',
   gpsSet: (km: number) => `現在位置を KP ${km}km に設定しました`,
 
   // Today screen
@@ -428,9 +431,12 @@ const zhTW: typeof ja = {
   gpsLocating: '定位中...',
   gpsPermissionDenied: '未取得 GPS 位置權限。請到設定中允許。',
   gpsTimeout: '定位花費時間較久，請在室外重試。',
-  gpsOffRoute: (km: number) =>
-    `目前位置距路線約 ${km}km。要將最近的 KP 設為目前位置嗎？`,
-  gpsOffRouteConfirm: '設定',
+  gpsSnapTitle: '📍 已取得目前 GPS 位置',
+  gpsSnapOnRoute: (km: number, nearest: string) =>
+    `將對應到路線上的 KP ${km}km (${nearest}附近)。`,
+  gpsSnapOffRoute: (km: number, nearest: string, detourKm: number) =>
+    `目前 GPS 位置距路線約 ${detourKm}km。要將目前位置設為最近的 KP ${km}km (${nearest}附近) 嗎？`,
+  gpsSetConfirm: '設定',
   gpsSet: (km: number) => `已將目前位置設為 KP ${km}km`,
 
   preparingPlan: '準備行程中...',

@@ -43,7 +43,24 @@ export default function PositionAdjuster({
   const [manualKm, setManualKm] = useState('');
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
-  const [gpsConfirm, setGpsConfirm] = useState<{ km: number; detourKm: number } | null>(null);
+  const [gpsConfirm, setGpsConfirm] = useState<{
+    km: number;
+    detourKm: number;
+    nearest: string;
+  } | null>(null);
+
+  /** Return the name (nameZh) of the goal closest to the given km. */
+  const nearestGoalName = (km: number): string => {
+    const all = getGoalCandidates();
+    if (all.length === 0) return '';
+    let best = all[0];
+    for (const g of all) {
+      if (Math.abs(g.kmFromStart - km) < Math.abs(best.kmFromStart - km)) {
+        best = g;
+      }
+    }
+    return best.nameZh;
+  };
 
   const handleUseGps = async () => {
     setGpsLoading(true);
@@ -51,11 +68,11 @@ export default function PositionAdjuster({
     try {
       const result = await detectCurrentPosition();
       const roundedKm = Math.round(result.km * 10) / 10;
-      if (result.detourKm > 5) {
-        setGpsConfirm({ km: roundedKm, detourKm: Math.round(result.detourKm) });
-      } else {
-        onSetPosition(roundedKm);
-      }
+      setGpsConfirm({
+        km: roundedKm,
+        detourKm: Math.round(result.detourKm),
+        nearest: nearestGoalName(roundedKm),
+      });
     } catch (err) {
       if (err instanceof PermissionDeniedError) {
         setGpsError(t.gpsPermissionDenied);
@@ -278,7 +295,7 @@ export default function PositionAdjuster({
         </KeyboardAvoidingView>
       </View>
 
-      {/* GPS off-route confirm modal */}
+      {/* GPS snap confirmation modal */}
       <Modal
         visible={gpsConfirm !== null}
         transparent
@@ -287,10 +304,16 @@ export default function PositionAdjuster({
       >
         <View style={styles.confirmBackdrop}>
           <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>📍 GPS</Text>
+            <Text style={styles.confirmTitle}>{t.gpsSnapTitle}</Text>
             {gpsConfirm && (
               <Text style={styles.confirmBody}>
-                {t.gpsOffRoute(gpsConfirm.detourKm)}
+                {gpsConfirm.detourKm > 5
+                  ? t.gpsSnapOffRoute(
+                      gpsConfirm.km,
+                      gpsConfirm.nearest,
+                      gpsConfirm.detourKm,
+                    )
+                  : t.gpsSnapOnRoute(gpsConfirm.km, gpsConfirm.nearest)}
               </Text>
             )}
             <View style={styles.confirmActions}>
@@ -310,7 +333,7 @@ export default function PositionAdjuster({
                 activeOpacity={0.7}
               >
                 <Text style={styles.confirmBtnOkText}>
-                  {t.gpsOffRouteConfirm}
+                  {t.gpsSetConfirm}
                 </Text>
               </TouchableOpacity>
             </View>
