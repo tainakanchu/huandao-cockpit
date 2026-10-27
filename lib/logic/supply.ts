@@ -366,39 +366,6 @@ export function generateSupplyPlan(
   return plan;
 }
 
-/**
- * Calculate a supply gap score (0-100) for difficulty calculation.
- *
- * 0 = supply points every few km, no gaps.
- * 100 = extremely long gaps with no supply.
- */
-export function calcSupplyGapScore(
-  checkpoints: Checkpoint[],
-  startKm: number,
-  endKm: number
-): number {
-  const gaps = detectSupplyGaps(checkpoints, startKm, endKm);
-
-  if (gaps.length === 0) {
-    // Check if there are any supply points at all
-    const hasSupply = checkpoints.some(
-      (cp) =>
-        SUPPLY_TYPES.has(cp.type) &&
-        cp.kmFromStart >= startKm &&
-        cp.kmFromStart <= endKm
-    );
-    return hasSupply ? 0 : 80; // No supply points at all is very bad
-  }
-
-  // Score based on the worst gap
-  const worstGap = Math.max(...gaps.map((g) => g.distanceKm));
-
-  // 25 km gap -> ~30 score, 40 km gap -> ~60 score, 60+ km gap -> ~100 score
-  const score = ((worstGap - SUPPLY_GAP_WARNING_KM) / 35) * 100;
-
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
-
 /** Check if a checkpoint type is a convenience store or food */
 function isConvenienceStoreOrFood(type: string): boolean {
   return [
