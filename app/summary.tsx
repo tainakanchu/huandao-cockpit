@@ -5,11 +5,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   BackHandler,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useConfirmDialog } from '@/components/common/ConfirmDialog';
 import { CyclingColors } from '@/constants/Colors';
 import { usePlanStore } from '@/lib/store/planStore';
 import { useRideStore } from '@/lib/store/rideStore';
@@ -20,6 +20,7 @@ import { useT } from '@/lib/i18n';
 
 export default function SummaryScreen() {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const dayPlan = usePlanStore((s) => s.dayPlan);
   const selectedGoal = usePlanStore((s) => s.selectedGoal);
   const dayNumber = usePlanStore((s) => s.dayNumber);
@@ -149,14 +150,13 @@ export default function SummaryScreen() {
         <TouchableOpacity
           style={styles.homeButton}
           onPress={() => {
-            Alert.alert(
-              t.finishRideTitle,
-              t.finishRideMessage,
-              [
-                { text: t.cancel, style: 'cancel' },
-                { text: t.finishConfirm, onPress: handleReturnHome },
-              ],
-            );
+            confirm({
+              title: t.finishRideTitle,
+              message: t.finishRideMessage,
+              cancelLabel: t.cancel,
+              confirmLabel: t.finishConfirm,
+              onConfirm: handleReturnHome,
+            });
           }}
           activeOpacity={0.7}
         >
@@ -170,6 +170,7 @@ export default function SummaryScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+      {confirmDialog}
     </SafeAreaView>
   );
 }
