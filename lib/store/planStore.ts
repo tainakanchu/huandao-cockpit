@@ -65,28 +65,6 @@ function startOfToday(): Date {
   return d;
 }
 
-/**
- * ルート上の代表的な座標を生成する（始点と終点の間を線形補間）。
- * 実際のルートデータが利用可能になるまでの仮実装。
- */
-function generateRoutePoints(
-  startLat: number,
-  startLng: number,
-  endLat: number,
-  endLng: number,
-  numPoints: number = 5
-): { lat: number; lng: number }[] {
-  const points: { lat: number; lng: number }[] = [];
-  for (let i = 0; i < numPoints; i++) {
-    const t = numPoints === 1 ? 0 : i / (numPoints - 1);
-    points.push({
-      lat: startLat + t * (endLat - startLat),
-      lng: startLng + t * (endLng - startLng),
-    });
-  }
-  return points;
-}
-
 export const usePlanStore = create<PlanState>()(
   persist(
     (set, get) => ({
@@ -134,15 +112,7 @@ export const usePlanStore = create<PlanState>()(
 
       // 2. 天気データを取得
       try {
-        const routePoints = generateRoutePoints(
-          goal.lat,
-          goal.lng,
-          goal.lat,
-          goal.lng,
-          3
-        );
-
-        const weatherResult = await fetchRouteWeather(routePoints, {
+        const weatherResult = await fetchRouteWeather(goal, {
           targetDate: rideDate,
         });
 
@@ -187,15 +157,7 @@ export const usePlanStore = create<PlanState>()(
     set({ isLoading: true });
 
     try {
-      const routePoints = generateRoutePoints(
-        selectedGoal.lat,
-        selectedGoal.lng,
-        selectedGoal.lat,
-        selectedGoal.lng,
-        3
-      );
-
-      const weatherResult = await fetchRouteWeather(routePoints, {
+      const weatherResult = await fetchRouteWeather(selectedGoal, {
         targetDate: rideDate,
       });
       let updatedPlan: DayPlan = {
