@@ -5,10 +5,10 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useConfirmDialog } from '@/components/common/ConfirmDialog';
 import { CyclingColors } from '@/constants/Colors';
 import { useTripStore } from '@/lib/store/tripStore';
 import { usePlanStore } from '@/lib/store/planStore';
@@ -16,6 +16,7 @@ import { useT } from '@/lib/i18n';
 
 export default function HistoryScreen() {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const dayHistory = useTripStore((s) => s.dayHistory);
   const getTotalProgress = useTripStore((s) => s.getTotalProgress);
   const deleteDayRecord = useTripStore((s) => s.deleteDayRecord);
@@ -30,43 +31,35 @@ export default function HistoryScreen() {
   };
 
   const handleDelete = (dayNumber: number, label: string) => {
-    Alert.alert(
-      label,
-      t.deleteRecordConfirm,
-      [
-        { text: t.cancel, style: 'cancel' },
-        {
-          text: t.delete,
-          style: 'destructive',
-          onPress: () => deleteDayRecord(dayNumber),
-        },
-      ],
-    );
+    confirm({
+      title: label,
+      message: t.deleteRecordConfirm,
+      cancelLabel: t.cancel,
+      confirmLabel: t.delete,
+      destructive: true,
+      onConfirm: () => deleteDayRecord(dayNumber),
+    });
   };
 
   const handleUndoLastRide = () => {
     const last = dayHistory[dayHistory.length - 1];
     if (!last) return;
 
-    Alert.alert(
-      t.undoLastDay,
-      t.undoLastDayConfirm(last.goalName),
-      [
-        { text: t.cancel, style: 'cancel' },
-        {
-          text: t.undo,
-          style: 'destructive',
-          onPress: () => {
-            const removed = undoLastRide();
-            if (removed && removed.startKm !== undefined) {
-              // Move current position back to the start of the undone ride
-              setCurrentKm(removed.startKm);
-            }
-            router.replace('/');
-          },
-        },
-      ],
-    );
+    confirm({
+      title: t.undoLastDay,
+      message: t.undoLastDayConfirm(last.goalName),
+      cancelLabel: t.cancel,
+      confirmLabel: t.undo,
+      destructive: true,
+      onConfirm: () => {
+        const removed = undoLastRide();
+        if (removed && removed.startKm !== undefined) {
+          // Move current position back to the start of the undone ride
+          setCurrentKm(removed.startKm);
+        }
+        router.replace('/');
+      },
+    });
   };
 
   if (dayHistory.length === 0) {
@@ -185,6 +178,7 @@ export default function HistoryScreen() {
           </View>
         ))}
       </ScrollView>
+      {confirmDialog}
     </SafeAreaView>
   );
 }

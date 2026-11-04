@@ -4,8 +4,8 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Modal,
 } from 'react-native';
+import ConfirmDialog from '@/components/common/ConfirmDialog';
 import { CyclingColors } from '@/constants/Colors';
 import { useWaypointStore, WAYPOINT_LIMIT } from '@/lib/store/waypointStore';
 import WaypointPicker from '@/components/plan/WaypointPicker';
@@ -128,42 +128,18 @@ export default function DayWaypointSection({ dayStartKm, dayEndKm }: Props) {
         dayEndKm={dayEndKm}
       />
 
-      {/* Custom confirm dialog (replaces Alert.alert which can't reliably fire
-          onPress on react-native-web) */}
-      <Modal
+      <ConfirmDialog
         visible={confirmRemove !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setConfirmRemove(null)}
-      >
-        <View style={styles.confirmBackdrop}>
-          <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>{t.removeStopTitle}</Text>
-            {confirmRemove && (
-              <Text style={styles.confirmBody}>
-                {confirmRemove.nameZh ?? confirmRemove.name} (KP{' '}
-                {Math.round(confirmRemove.kmFromStart)}km)
-              </Text>
-            )}
-            <View style={styles.confirmActions}>
-              <TouchableOpacity
-                style={[styles.confirmBtn, styles.confirmBtnCancel]}
-                onPress={() => setConfirmRemove(null)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.confirmBtnCancelText}>{t.cancel}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.confirmBtn, styles.confirmBtnRemove]}
-                onPress={handleConfirmRemove}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.confirmBtnRemoveText}>{t.removeStopButton}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        title={t.removeStopTitle}
+        message={confirmRemove
+          ? `${confirmRemove.nameZh ?? confirmRemove.name} (KP ${Math.round(confirmRemove.kmFromStart)}km)`
+          : ''}
+        cancelLabel={t.cancel}
+        confirmLabel={t.removeStopButton}
+        destructive
+        onCancel={() => setConfirmRemove(null)}
+        onConfirm={handleConfirmRemove}
+      />
     </View>
   );
 }
@@ -274,58 +250,4 @@ const styles = StyleSheet.create({
     color: CyclingColors.white,
   },
 
-  // Confirm dialog
-  confirmBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  confirmCard: {
-    width: '100%',
-    maxWidth: 340,
-    backgroundColor: CyclingColors.card,
-    borderRadius: 16,
-    padding: 20,
-  },
-  confirmTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: CyclingColors.textPrimary,
-    marginBottom: 6,
-  },
-  confirmBody: {
-    fontSize: 13,
-    color: CyclingColors.textSecondary,
-    marginBottom: 16,
-  },
-  confirmActions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  confirmBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  confirmBtnCancel: {
-    backgroundColor: CyclingColors.background,
-    borderWidth: 1,
-    borderColor: CyclingColors.cardBorder,
-  },
-  confirmBtnCancelText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: CyclingColors.textSecondary,
-  },
-  confirmBtnRemove: {
-    backgroundColor: CyclingColors.critical,
-  },
-  confirmBtnRemoveText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: CyclingColors.white,
-  },
 });

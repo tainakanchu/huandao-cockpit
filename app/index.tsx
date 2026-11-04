@@ -5,10 +5,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useConfirmDialog } from '@/components/common/ConfirmDialog';
 import { CyclingColors } from '@/constants/Colors';
 import { usePlanStore } from '@/lib/store/planStore';
 import { useTripStore } from '@/lib/store/tripStore';
@@ -24,6 +24,7 @@ import type { GoalCandidate } from '@/lib/types';
 
 export default function HomeScreen() {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const currentKm = usePlanStore((s) => s.currentKm);
   const selectGoal = usePlanStore((s) => s.selectGoal);
   const setCurrentKm = usePlanStore((s) => s.setCurrentKm);
@@ -84,20 +85,13 @@ export default function HomeScreen() {
           ? `${nearestAccom.nameZh} (${nearestAccom.kmFromStart}km)`
           : t.noInfo;
 
-        Alert.alert(
-          t.noAccommodationTitle,
-          t.noAccommodationMessage(goal.nameZh, nearestInfo),
-          [
-            {
-              text: t.selectAlternative,
-              style: 'cancel',
-            },
-            {
-              text: t.selectAnyway,
-              onPress: () => proceedWithGoal(goal),
-            },
-          ]
-        );
+        confirm({
+          title: t.noAccommodationTitle,
+          message: t.noAccommodationMessage(goal.nameZh, nearestInfo),
+          cancelLabel: t.selectAlternative,
+          confirmLabel: t.selectAnyway,
+          onConfirm: () => proceedWithGoal(goal),
+        });
         return;
       }
 
@@ -232,6 +226,7 @@ export default function HomeScreen() {
 
       {/* Version footer */}
       <Text style={styles.versionFooter}>v {VERSION}</Text>
+      {confirmDialog}
     </SafeAreaView>
   );
 }

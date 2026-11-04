@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useConfirmDialog } from '@/components/common/ConfirmDialog';
 import { CyclingColors } from '@/constants/Colors';
 import { usePlanStore } from '@/lib/store/planStore';
 import { useRideStore } from '@/lib/store/rideStore';
@@ -25,6 +26,7 @@ import type { AdvisoryCard } from '@/lib/types';
 
 export default function NextScreen() {
   const t = useT();
+  const { confirm, dialog: confirmDialog } = useConfirmDialog();
   const dayPlan = usePlanStore((s) => s.dayPlan);
   const selectedGoal = usePlanStore((s) => s.selectedGoal);
   const sunTimes = usePlanStore((s) => s.sunTimes);
@@ -159,28 +161,24 @@ export default function NextScreen() {
   }, [addNote, t]);
 
   const handleChangeGoal = useCallback(() => {
-    Alert.alert(t.changeGoalConfirmTitle, t.changeGoalConfirmMessage, [
-      { text: t.cancel, style: 'cancel' },
-      {
-        text: t.changeConfirm,
-        style: 'destructive',
-        onPress: () => router.replace('/'),
-      },
-    ]);
+    confirm({
+      title: t.changeGoalConfirmTitle,
+      message: t.changeGoalConfirmMessage,
+      cancelLabel: t.cancel,
+      confirmLabel: t.changeConfirm,
+      destructive: true,
+      onConfirm: () => router.replace('/'),
+    });
   }, [t]);
 
   const handleArrive = useCallback(() => {
-    Alert.alert(
-      t.arriveConfirmTitle,
-      t.arriveConfirmMessage(selectedGoal?.nameZh ?? t.mapGoal),
-      [
-        { text: t.notYet, style: 'cancel' },
-        {
-          text: t.yesArrived,
-          onPress: () => router.push('/summary'),
-        },
-      ],
-    );
+    confirm({
+      title: t.arriveConfirmTitle,
+      message: t.arriveConfirmMessage(selectedGoal?.nameZh ?? t.mapGoal),
+      cancelLabel: t.notYet,
+      confirmLabel: t.yesArrived,
+      onConfirm: () => router.push('/summary'),
+    });
   }, [selectedGoal, t]);
 
   // No plan state
@@ -362,6 +360,7 @@ export default function NextScreen() {
           </View>
         </View>
       </Modal>
+      {confirmDialog}
     </SafeAreaView>
   );
 }
