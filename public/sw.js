@@ -127,7 +127,7 @@ async function staleWhileRevalidate(request, cacheName) {
     .catch(() => null);
 
   // If we have a cached response, return it immediately; otherwise wait for network.
-  return cached || networkFetch || new Response('Offline', { status: 503 });
+  return cached || (await networkFetch) || new Response('Offline', { status: 503 });
 }
 
 async function navigationHandler(request) {
