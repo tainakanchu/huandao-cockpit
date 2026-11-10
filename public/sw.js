@@ -58,12 +58,12 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
 
-  // Open-Meteo API: stale-while-revalidate
+  // Open-Meteo API: network-first
   if (
     url.hostname === 'api.open-meteo.com' ||
     url.hostname.endsWith('.open-meteo.com')
   ) {
-    event.respondWith(staleWhileRevalidate(req, API_CACHE));
+    event.respondWith(networkFirst(req, API_CACHE));
     return;
   }
 
@@ -115,26 +115,25 @@ async function cacheFirst(request, cacheName) {
   }
 }
 
-async function staleWhileRevalidate(request, cacheName) {
+async function networkFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
-  const cached = await cache.match(request);
-
-  const networkFetch = fetch(request)
-    .then((res) => {
-      if (res && res.ok) cache.put(request, res.clone());
-      return res;
-    })
-    .catch(() => null);
-
-  // If we have a cached response, return it immediately; otherwise wait for network.
-  return cached || (await networkFetch) || new Response('Offline', { status: 503 });
+  try {
+    const res = await fetch(request);
+    if (res && res.ok) cache.put(request, res.clone());
+    return res;
+  } catch {
+    const cached = await cache.match(request);
+    return cached || new Response('Offline', { status: 503 });
+  }
 }
 
 async function navigationHandler(request) {
   try {
     const res = await fetch(request);
-    const cache = await caches.open(SHELL_CACHE);
-    cache.put('/', res.clone());
+    if (res.ok) {
+      const cache = await caches.open(SHELL_CACHE);
+      cache.put('/', res.clone());
+    }
     return res;
   } catch {
     const cache = await caches.open(SHELL_CACHE);
