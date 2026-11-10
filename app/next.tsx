@@ -33,6 +33,7 @@ export default function NextScreen() {
 
   const isRiding = useRideStore((s) => s.isRiding);
   const startRide = useRideStore((s) => s.startRide);
+  const endRide = useRideStore((s) => s.endRide);
   const currentEta = useRideStore((s) => s.currentEta);
   const plannedEta = useRideStore((s) => s.plannedEta);
   const resetWater = useRideStore((s) => s.resetWater);
@@ -78,6 +79,7 @@ export default function NextScreen() {
   const confirmExit = () => {
     isExitingIntentionallyRef.current = true;
     setExitConfirm(false);
+    endRide();
     router.replace('/');
   };
 
@@ -167,9 +169,12 @@ export default function NextScreen() {
       cancelLabel: t.cancel,
       confirmLabel: t.changeConfirm,
       destructive: true,
-      onConfirm: () => router.replace('/'),
+      onConfirm: () => {
+        endRide();
+        router.replace('/');
+      },
     });
-  }, [t]);
+  }, [endRide, t]);
 
   const handleArrive = useCallback(() => {
     confirm({
@@ -322,6 +327,7 @@ export default function NextScreen() {
         onDismiss={() => setAlertVisible(false)}
         onAlternateGoal={() => {
           setAlertVisible(false);
+          endRide();
           router.replace('/');
         }}
       />
