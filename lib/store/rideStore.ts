@@ -64,7 +64,7 @@ const createDefaultStatus = (): RideStatus => ({
 /**
  * 経過時間を分単位で計算する。
  */
-function computeElapsedMinutes(startedAt: Date): number {
+export function computeElapsedMinutes(startedAt: Date): number {
   const now = new Date();
   return Math.floor((now.getTime() - startedAt.getTime()) / (1000 * 60));
 }

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import { router } from 'expo-router';
 import { useConfirmDialog } from '@/components/common/ConfirmDialog';
 import { CyclingColors } from '@/constants/Colors';
 import { usePlanStore } from '@/lib/store/planStore';
-import { useRideStore } from '@/lib/store/rideStore';
+import { computeElapsedMinutes, useRideStore } from '@/lib/store/rideStore';
 import { useTripStore } from '@/lib/store/tripStore';
 import { getGoalCandidates } from '@/lib/data/goals';
 import CumulativeStats from '@/components/summary/CumulativeStats';
@@ -27,6 +27,7 @@ export default function SummaryScreen() {
   const advanceDay = usePlanStore((s) => s.advanceDay);
   const endRide = useRideStore((s) => s.endRide);
   const status = useRideStore((s) => s.status);
+  const [elapsedMinutes] = useState(() => computeElapsedMinutes(status.startedAt));
 
   const dayHistory = useTripStore((s) => s.dayHistory);
 
@@ -39,6 +40,7 @@ export default function SummaryScreen() {
   const progress = useTripStore.getState().getTotalProgress();
 
   const handleReturnHome = () => {
+    const completedAt = new Date();
     // Record the completed ride
     if (dayPlan && selectedGoal) {
       const allGoals = getGoalCandidates();
@@ -56,8 +58,8 @@ export default function SummaryScreen() {
         goalName: selectedGoal.nameZh || selectedGoal.name,
         distanceKm: dayPlan.distanceKm,
         elevationGainM: dayPlan.elevationGainM,
-        ridingMinutes: status.elapsedMinutes,
-        date: new Date().toISOString().split('T')[0],
+        ridingMinutes: elapsedMinutes,
+        date: `${completedAt.getFullYear()}-${String(completedAt.getMonth() + 1).padStart(2, '0')}-${String(completedAt.getDate()).padStart(2, '0')}`,
         notes: [...status.notes],
       });
     }
@@ -116,7 +118,7 @@ export default function SummaryScreen() {
 
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  {formatTime(status.elapsedMinutes)}
+                  {formatTime(elapsedMinutes)}
                 </Text>
                 <Text style={styles.statUnit}></Text>
                 <Text style={styles.statLabel}>{t.ridingTime}</Text>
